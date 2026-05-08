@@ -1,0 +1,74 @@
+Product Requirements Document: Internal Data Pipeline Modernisation
+Version: 0.3 (Draft)
+Author: Platform Engineering Team
+Last Updated: 2024-01-10
+
+---
+
+OVERVIEW
+
+The current ETL pipeline was built in 2018 and processes ~2M records per day.
+It runs on a single EC2 instance with no redundancy. Three production incidents
+in Q4 2023 were caused directly by pipeline failures, costing an estimated
+40 engineering hours to recover from each.
+
+This PRD outlines the requirements for a modern, resilient data pipeline
+to replace the legacy system by end of Q2 2024.
+
+---
+
+GOALS
+
+Primary: Eliminate single points of failure in data processing
+Secondary: Reduce pipeline latency from current avg 4 hours to under 30 minutes
+Tertiary: Enable self-service for analysts to define new data transformations
+
+---
+
+FUNCTIONAL REQUIREMENTS
+
+FR-001: The pipeline must support at-least-once delivery semantics
+FR-002: Failed jobs must automatically retry up to 3 times with exponential backoff
+FR-003: Pipeline runs must be observable via a dashboard showing:
+         - Job status (running, succeeded, failed, retrying)
+         - Record counts at each stage
+         - Processing duration per job
+FR-004: Analysts must be able to add new data source connectors via config
+         files (YAML), without requiring engineering support
+FR-005: The system must support parallel processing of independent pipeline stages
+FR-006: All pipeline runs must be logged with sufficient detail to allow
+         full audit trails for compliance purposes
+FR-007: Data schemas must be validated at ingestion; invalid records must be
+         quarantined, not silently dropped
+
+NON-FUNCTIONAL REQUIREMENTS
+
+NFR-001: 99.9% uptime SLA during business hours (8am–8pm local)
+NFR-002: Must process peak load of 500k records/hour without degradation
+NFR-003: Infrastructure must be deployable via Terraform (IaC requirement)
+NFR-004: Secrets (API keys, DB credentials) must never be stored in config files
+
+---
+
+OUT OF SCOPE
+
+- Real-time / streaming pipeline (batch only for this phase)
+- Migration of historical data (separate project)
+- BI tool integration (Tableau / Looker - covered in separate PRD)
+
+---
+
+TECHNICAL NOTES
+
+- Current stack: Python 2.7 scripts on EC2, PostgreSQL, S3
+- Target stack: Python 3.11, Apache Airflow (or equivalent), RDS Aurora, S3
+- The team has flagged interest in evaluating Prefect or Dagster as
+  alternatives to Airflow - a spike is recommended before committing
+
+---
+
+RISKS
+
+- Key engineer (Jamie) who owns the legacy system is leaving in March
+- Airflow has a known learning curve; team training may be needed
+- Q2 deadline may be tight if infrastructure provisioning is delayed

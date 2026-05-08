@@ -1,0 +1,37 @@
+[
+  {
+    "id": "US-042",
+    "title": "User can reset their password via email",
+    "status": "Done",
+    "priority": "High",
+    "category": "Feature"
+  },
+  {
+    "id": "US-043",
+    "title": "User can update billing address",
+    "status": "In Progress",
+    "priority": "Medium",
+    "category": "Feature"
+  },
+  {
+    "id": "US-044",
+    "title": "Admin can export user list as CSV",
+    "status": "Backlog",
+    "priority": "Low",
+    "category": "Feature"
+  },
+  {
+    "id": "BUG-017",
+    "title": "Safari: checkout form fails on iOS 16",
+    "status": "Backlog",
+    "priority": "High",
+    "category": "Bug"
+  },
+  {
+    "id": "TD-008",
+    "title": "Upgrade Node.js from v14 to v20",
+    "status": "Backlog",
+    "priority": "Medium",
+    "category": "Tech Debt"
+  }
+]
