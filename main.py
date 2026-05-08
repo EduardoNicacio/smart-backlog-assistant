@@ -65,6 +65,7 @@ def parse_args():
     )
     parser.add_argument(
         "--provider",
+        "-p",
         choices=["anthropic", "openai"],
         default=None,
         help="AI provider to use. Auto-detected from environment if not set.",
