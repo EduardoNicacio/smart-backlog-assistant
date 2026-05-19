@@ -1,75 +1,143 @@
 """
 src/formatter.py
-================
-Formats the raw AI output into the final output structure.
+----------------
+Formats the workflow output into clean Markdown and writes it to
+the ``outputs/`` directory.
 
-Candidate note: this is a good place to:
-  - Add metadata (timestamp, model used, input file name)
-  - Transform user stories into a specific ticketing system format
-  - Add validation / quality checks on the output
-  - Generate a Markdown or HTML report in addition to JSON
+Usage
+-----
+    from src.formatter import format_and_save
+
+    output_path = format_and_save(result, prompt="What are the dev tasks?")
 """
 
 import logging
-from datetime import datetime, timezone
-from typing import Any
+import re
+from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+OUTPUTS_DIR = Path("outputs")
 
-def format_output(result: dict[str, Any]) -> dict[str, Any]:
+# ---------------------------------------------------------------------------
+# Format and save helper
+# ---------------------------------------------------------------------------
+
+def format_and_save(result: dict, prompt: str = "") -> Path:
     """
-    Wrap the AI result in a standardised output envelope.
+    Format a workflow result dict as Markdown and write it to ``outputs/``.
 
-    Args:
-        result: The parsed dict returned by BacklogProcessor.process()
+    Parameters
+    ----------
+    result : dict
+        Dict returned by ``BacklogProcessor.run()``.  Expected keys:
+        ``steps``, ``step_outputs``, ``final_output``, ``prompt``.
+    prompt : str, optional
+        The original workflow prompt (used as the document title).
 
-    Returns:
-        Final output dict ready to be serialised to JSON.
+    Returns
+    -------
+    Path
+        Path to the written output file.
     """
-    # Add metadata wrapper
-    output = {
-        "metadata": {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "version": "1.0.0",
-        },
-        "summary": result.get("summary", ""),
-        "requirements": result.get("requirements", []),
-        "user_stories": result.get("user_stories", []),
-        "duplicates_or_conflicts": result.get("duplicates_or_conflicts", []),
-        "open_questions": result.get("open_questions", []),
-    }
+    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Preserve any debug/error fields if present
-    if "_raw_response" in result:
-        output["_debug"] = {
-            "raw_response": result["_raw_response"],
-            "parse_error": result.get("_parse_error"),
-        }
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = OUTPUTS_DIR / f"backlog_{timestamp}.md"
 
-    _log_quality_warnings(output)
+    md = _build_markdown(result, prompt or result.get("prompt", "Backlog generation"))
 
-    return output
+    try:
+        filename.write_text(md, encoding="utf-8")
+        logger.info("Output written to %s", filename)
+    except Exception:
+        logger.exception("Failed to write output file: %s", filename)
+        raise
 
+    return filename
 
-def _log_quality_warnings(output: dict[str, Any]) -> None:
-    """Log warnings if the output looks suspicious."""
-    stories = output.get("user_stories", [])
-    requirements = output.get("requirements", [])
+# ---------------------------------------------------------------------------
+# Build markdown helper
+# ---------------------------------------------------------------------------
 
-    if not stories:
-        logger.warning("No user stories were generated - check the input document")
+def _build_markdown(result: dict, title: str) -> str:
+    """Build the full Markdown document from a result dict."""
+    steps: list = result.get("steps", [])
+    outputs: list = result.get("step_outputs", [])
+    final: str = result.get("final_output", "")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    if not requirements:
-        logger.warning("No requirements were extracted - check the input document")
+    lines = [
+        "# Smart Backlog Assistant - Output",
+        "",
+        f"- **Generated**: {timestamp}",
+        f"- **Prompt**: {title}",
+        "- **Model**: [to be filled by the candidate]",
+        "",
+        "---",
+        "",
+    ]
 
-    for story in stories:
-        if not story.get("acceptance_criteria"):
-            logger.warning(
-                f"User story {story.get('id', '?')} has no acceptance criteria"
-            )
+    # Workflow steps summary
+    if steps:
+        lines += ["## Workflow Steps", ""]
+        for i, step in enumerate(steps, 1):
+            lines.append(f"{step}. ")
+        lines.append("")
+        lines.append("---")
+        lines.append("")
 
-    if output.get("open_questions"):
-        logger.info(
-            f"{len(output['open_questions'])} open question(s) flagged by the AI"
-        )
+    # Per-step output
+    for i, (step, output) in enumerate(zip(steps, outputs), 1):
+        lines += [
+            f"## Step {step}: ",
+            "",
+            output.strip() if output else "_No output generated._",
+            "",
+            "---",
+            "",
+        ]
+
+    # Final output highlight
+    if final:
+        lines += [
+            "## Final Output",
+            "",
+            "> This is the output of the last workflow step and represents the primary deliverable.",
+            "",
+            final.strip(),
+            "",
+        ]
+
+    return "\n".join(lines)
+
+# ---------------------------------------------------------------------------
+# Print summary helper
+# ---------------------------------------------------------------------------
+
+def print_summary(result: dict) -> None:
+    """Print a concise summary of the workflow result to stdout."""
+    steps = result.get("steps", [])
+    outputs = result.get("step_outputs", [])
+    final = result.get("final_output", "")
+
+    print("\n" + "=" * 80)
+    print("WORKFLOW SUMMARY")
+    print("=" * 80)
+
+    if steps:
+        print(f"\n{len(steps)} step(s) executed:")
+        for i, (step, output) in enumerate(zip(steps, outputs), 1):
+            status = "[ERROR]" if output.startswith("[ERROR]") else "[OK]"
+            print(f"  {i}. {status} {step}")
+
+    if final:
+        print("\n--- Final Output (truncated to 800 chars) ---")
+        print(final[:800])
+        if len(final) > 800:
+            print("... (see output file for full content)")
+    else:
+        print("\n[No output was generated]")
+
+    print("=" * 80 + "\n")

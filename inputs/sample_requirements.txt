@@ -1,74 +1,61 @@
-Product Requirements Document: Internal Data Pipeline Modernisation
-Version: 0.3 (Draft)
-Author: Platform Engineering Team
-Last Updated: 2024-01-10
+Product Specification: Email Router Service
+===========================================
 
----
+Overview
+--------
+The Email Router Service is a cloud-based platform that automatically classifies,
+prioritizes, and routes incoming emails to the correct team or individual based on
+content analysis, sender history, and configurable business rules.
 
-OVERVIEW
+The system is designed for mid-to-large organisations that receive high volumes of
+customer and internal email across multiple inboxes.
 
-The current ETL pipeline was built in 2018 and processes ~2M records per day.
-It runs on a single EC2 instance with no redundancy. Three production incidents
-in Q4 2023 were caused directly by pipeline failures, costing an estimated
-40 engineering hours to recover from each.
+Core Capabilities
+-----------------
+1. Email Ingestion
+   - Connect to one or more mailboxes via IMAP/SMTP or Microsoft 365 / Google
+     Workspace APIs.
+   - Ingest emails in real time or on a polling schedule.
+   - Support attachments up to 25 MB.
 
-This PRD outlines the requirements for a modern, resilient data pipeline
-to replace the legacy system by end of Q2 2024.
+2. Classification Engine
+   - Analyse email subject, body, and metadata using NLP.
+   - Assign one or more category labels (e.g. Billing, Support, Sales, HR).
+   - Detect language and route accordingly.
+   - Confidence score per classification; flag low-confidence emails for human review.
 
----
+3. Routing Rules
+   - Administrators can define rules based on: sender domain, keywords, category
+     label, time of day, and team availability.
+   - Rules support priority ordering and fallback routes.
+   - No-code rule builder UI for non-technical administrators.
 
-GOALS
+4. Escalation and SLA Management
+   - Define SLA targets per category (e.g. Support emails answered within 4 hours).
+   - Automatic escalation when SLA is at risk.
+   - Notification to team leads via email or Slack when escalation is triggered.
 
-Primary: Eliminate single points of failure in data processing
-Secondary: Reduce pipeline latency from current avg 4 hours to under 30 minutes
-Tertiary: Enable self-service for analysts to define new data transformations
+5. Analytics Dashboard
+   - Real-time view of inbox volume, routing decisions, and SLA status.
+   - Historical reports: volume by category, average response time, escalation rate.
+   - Export reports as CSV or PDF.
 
----
+6. Integrations
+   - CRM: Salesforce, HubSpot.
+   - Ticketing: Jira Service Management, Zendesk.
+   - Messaging: Slack, Microsoft Teams.
 
-FUNCTIONAL REQUIREMENTS
+Non-Functional Requirements
+---------------------------
+- Availability: 99.9 % uptime SLA.
+- Latency: emails routed within 5 seconds of ingestion.
+- Security: SOC 2 Type II compliant; data encrypted at rest and in transit.
+- Scalability: handle up to 50,000 emails per day per organisation.
 
-FR-001: The pipeline must support at-least-once delivery semantics
-FR-002: Failed jobs must automatically retry up to 3 times with exponential backoff
-FR-003: Pipeline runs must be observable via a dashboard showing:
-         - Job status (running, succeeded, failed, retrying)
-         - Record counts at each stage
-         - Processing duration per job
-FR-004: Analysts must be able to add new data source connectors via config
-         files (YAML), without requiring engineering support
-FR-005: The system must support parallel processing of independent pipeline stages
-FR-006: All pipeline runs must be logged with sufficient detail to allow
-         full audit trails for compliance purposes
-FR-007: Data schemas must be validated at ingestion; invalid records must be
-         quarantined, not silently dropped
-
-NON-FUNCTIONAL REQUIREMENTS
-
-NFR-001: 99.9% uptime SLA during business hours (8am–8pm local)
-NFR-002: Must process peak load of 500k records/hour without degradation
-NFR-003: Infrastructure must be deployable via Terraform (IaC requirement)
-NFR-004: Secrets (API keys, DB credentials) must never be stored in config files
-
----
-
-OUT OF SCOPE
-
-- Real-time / streaming pipeline (batch only for this phase)
-- Migration of historical data (separate project)
-- BI tool integration (Tableau / Looker - covered in separate PRD)
-
----
-
-TECHNICAL NOTES
-
-- Current stack: Python 2.7 scripts on EC2, PostgreSQL, S3
-- Target stack: Python 3.11, Apache Airflow (or equivalent), RDS Aurora, S3
-- The team has flagged interest in evaluating Prefect or Dagster as
-  alternatives to Airflow - a spike is recommended before committing
-
----
-
-RISKS
-
-- Key engineer (Jamie) who owns the legacy system is leaving in March
-- Airflow has a known learning curve; team training may be needed
-- Q2 deadline may be tight if infrastructure provisioning is delayed
+Users
+-----
+- Customer Support Agents   : receive and action routed emails.
+- Sales Representatives     : receive routed sales enquiries.
+- IT Administrators         : configure mailboxes, routing rules, and integrations.
+- Team Leads / Managers     : monitor SLA, receive escalation alerts, view reports.
+- End Customers             : send emails that are ingested by the system.

@@ -1,1 +1,1 @@
-# src/__init__.py
+"""Smart Backlog Assistant - source package."""

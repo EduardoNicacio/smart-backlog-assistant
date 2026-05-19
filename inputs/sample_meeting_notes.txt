@@ -1,48 +1,65 @@
 Meeting Notes - Product Discovery Session
-Date: 2024-01-15
-Attendees: Sarah (PM), Dev (Tech Lead), Priya (Designer), Marcus (Stakeholder)
+==========================================
+Date    : 2024-03-15
+Project : Internal Knowledge Base Assistant
+Present : Product Lead, Engineering Lead, UX Designer, Customer Success Manager
 
 ---
 
-AGENDA: New Customer Portal Requirements
+Summary of discussion
+----------------------
+We need an internal tool that lets employees search and interact with company
+knowledge spread across Confluence, Google Drive, and past Slack threads.
+The current situation is that staff spend 30–45 minutes per day searching for
+information they know exists somewhere.
 
-Sarah opened the session by outlining the goal: replace the legacy customer-facing
-portal before Q3. The current system has a 34% abandonment rate on the account
-setup flow and support tickets regularly cite "can't find my invoices."
+The assistant should feel like talking to a knowledgeable colleague:
+you ask a question in natural language, it finds the relevant documents,
+and gives you a direct answer with source citations.
 
-KEY DISCUSSION POINTS:
+Functional requirements agreed in this session
+-----------------------------------------------
+1. Semantic search across connected knowledge sources
+   - Confluence spaces, Google Drive folders, Slack channel archives.
+   - Results ranked by relevance, not just keyword match.
+   - Support for filtering by source, date range, and author.
 
-1. Authentication & Onboarding
-   - Marcus wants SSO via Google and Microsoft for enterprise customers
-   - Sarah mentioned that password reset emails take up to 10 minutes currently
-     - this is a known pain point from NPS surveys
-   - Dev flagged that we'll need MFA support to satisfy the upcoming SOC 2 audit
-   - Priya shared research: 60% of new users drop off before completing profile setup.
-     She wants to redesign the onboarding to a 3-step wizard with progress indicators.
+2. Conversational Q&A interface
+   - Chat-style web UI.
+   - Multi-turn conversation: follow-up questions maintain context.
+   - Response always includes a "Sources" section listing the documents used.
 
-2. Invoice & Billing
-   - Top support request: customers can't find or download past invoices
-   - Marcus wants customers to be able to self-serve billing changes (upgrade/downgrade plan)
-   - Auto-pay setup is frequently broken on Safari - Dev to investigate
-   - Requirement: invoices must be available as PDF downloads going back 24 months
+3. Document summarisation
+   - Users can paste a document URL or upload a PDF.
+   - The assistant produces a structured summary: key points, action items,
+     open questions.
 
-3. Support & Help
-   - Current process: email only, avg response 2.3 days
-   - The team agreed we should integrate a live chat widget (Intercom was mentioned)
-   - Sarah wants an AI-assisted FAQ - common questions should be auto-answered
-   - Tickets should show status to the customer (open/in-progress/resolved)
+4. Onboarding assistant mode
+   - New-hire persona with a curated set of must-read documents.
+   - Guided Q&A flow covering company policies, team structure, tools.
 
-4. Notifications
-   - Customers want email + SMS notifications for payment failures
-   - Dev noted the current system sends no notifications at all for failed payments
-   - Priya: notification preferences should be configurable per-user
+5. Admin controls
+   - IT admins can grant or revoke access to specific knowledge sources
+     per user group.
+   - Audit log of all queries (no content stored, just metadata).
+   - Ability to mark documents as "restricted" so they are excluded from
+     certain user groups.
 
-ACTION ITEMS:
-- Dev to spike on SSO integration options (SAML vs OAuth) - by Jan 22
-- Priya to share updated onboarding wireframes - by Jan 19
-- Sarah to confirm which Intercom plan we're on - by Jan 16
+6. Feedback and quality loop
+   - Thumbs up / thumbs down on each answer.
+   - Feedback routed to a small content team that reviews and improves
+     source documents.
 
-OPEN QUESTIONS:
-- Do we support Apple Pay / Google Pay in the new billing flow?
-- What's the data retention policy for old invoices beyond 24 months?
-- Mobile app or responsive web only?
+Users identified
+----------------
+- General employees       : primary users for day-to-day knowledge lookup.
+- New hires               : onboarding-focused usage.
+- IT administrators       : manage source connections and access controls.
+- Content / HR team       : review feedback, maintain knowledge sources.
+- Engineering team        : integrate the API in internal tooling.
+
+Open questions (to be resolved before sprint 1)
+------------------------------------------------
+- Which embedding model to use (OpenAI vs. open-source)?
+- Slack archive ingestion: legal has to sign off on retention policies.
+- Should answers be streamed or returned all at once?

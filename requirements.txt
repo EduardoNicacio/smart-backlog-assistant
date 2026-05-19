@@ -1,17 +1,8 @@
 # Core dependencies
-anthropic>=0.64.0        # Anthropic Claude SDK (install if using Anthropic)
-openai>=1.78.1           # OpenAI SDK (install if using OpenAI)
-pypdf>=4.0.0             # PDF text extraction
-
-# Pydantic framework
-pydantic-ai>=0.4.2
-
-# Data analysis
-pandas>=2.2.3
-
-# Optional but recommended
-python-dotenv>=1.1.0     # Load API keys from .env file
-
-# Development / testing
-pytest>=8.0.0
-pytest-cov>=4.1.0
+openai>=1.30.0          # OpenAI SDK (install if using OpenAI)
+anthropic>=0.64.0       # Anthropic Claude SDK (install if using Anthropic)
+python-dotenv>=1.0.0    # Load API keys from .env file
+numpy>=1.26.0           # Enables high-performance numerical analysis
+pandas>=2.2.0           # Data analysis
+pypdf>=4.2.0            # PDF text extraction
+pytest>=8.2.0           # Development / testing

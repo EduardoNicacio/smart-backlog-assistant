@@ -1,17 +1,18 @@
 """
 src/document_loader.py
-======================
-Loads input documents and returns their text content.
+-----------------------
+Loads product specification documents from .txt or .pdf files.
 
-Supported formats:
-  - .txt  (plain text)
-  - .md   (markdown - treated as plain text)
-  - .pdf  (requires pypdf: pip install pypdf)
+Supported formats
+-----------------
+.txt, .md - read directly as UTF-8 text.
+.pdf - text extracted page-by-page using pypdf.
 
-Candidate note: extend this to support:
-  - .docx (python-docx)
-  - URLs  (requests + BeautifulSoup)
-  - Confluence / Notion API integration
+Usage
+-----
+    from src.document_loader import load_document
+
+    spec = load_document("inputs/sample_requirements.txt")
 """
 
 import logging
@@ -19,76 +20,83 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Load document helper
+# ---------------------------------------------------------------------------
 
 def load_document(path: str) -> str:
     """
-    Load a document from disk and return its text content.
-    Supported formats: txt, md, pdf
+    Load and return the text content of a text, markdown or PDF file.
 
-    Args:
-        path: File path to the document.
+    Parameters
+    ----------
+    path : str
+        Absolute or relative path to the document.
 
-    Returns:
-        Extracted text content as a string.
+    Returns
+    -------
+    str
+        The extracted text content.
 
-    Raises:
-        FileNotFoundError: If the file does not exist.
-        ValueError: If the file format is not supported.
+    Raises
+    ------
+    FileNotFoundError
+        If *path* does not exist.
+    ValueError
+        If the file extension is not supported.
     """
-    file_path = Path(path)
+    p = Path(path)
 
-    if not file_path.exists():
-        raise FileNotFoundError(f"File not found: {path}")
+    if not p.exists():
+        raise FileNotFoundError(f"Document not found: {path}")
 
-    suffix = file_path.suffix.lower()
+    ext = p.suffix.lower()
 
-    if suffix in (".txt", ".md"):
-        return _load_text(file_path)
-    elif suffix == ".pdf":
-        return _load_pdf(file_path)
+    if ext == ".txt" or ext == ".md":
+        return _load_txt(p)
+    elif ext == ".pdf":
+        return _load_pdf(p)
     else:
-        raise ValueError(
-            f"Unsupported file format '{suffix}'. Supported: .txt, .md, .pdf"
-        )
+        raise ValueError(f"Unsupported document format '{ext}'. Supported: .txt, .pdf")
 
+# ---------------------------------------------------------------------------
+# Load _txt_ and _md_ helper
+# ---------------------------------------------------------------------------
 
-def _load_text(path: Path) -> str:
-    """Load a plain text or markdown file."""
-    logger.debug(f"Reading text file: {path}")
-    text = path.read_text(encoding="utf-8")
-    logger.debug(f"Loaded {len(text)} characters from {path.name}")
-    return text
+def _load_txt(path: Path) -> str:
+    """Read a plain-text or markdown file."""
+    try:
+        content = path.read_text(encoding="utf-8")
+        logger.info("Loaded text document: %s (%d chars)", path.name, len(content))
+        return content
+    except Exception:
+        logger.exception("Failed to read text file: %s", path)
+        raise
 
+# ---------------------------------------------------------------------------
+# Load _pdf_ helper
+# ---------------------------------------------------------------------------
 
 def _load_pdf(path: Path) -> str:
-    """
-    Extract text from a PDF file using pypdf.
-
-    Candidate note: for complex PDFs (tables, scanned pages) consider:
-      - pdfplumber for better layout-aware extraction
-      - pytesseract for OCR on scanned documents
-    """
+    """Extract text from a PDF using pypdf."""
     try:
         from pypdf import PdfReader
-    except ImportError:
+    except ImportError as exc:
         raise ImportError(
-            "pypdf is required for PDF support. Install it with: pip install pypdf"
+            "pypdf is required to load PDF files. Install it with: pip install pypdf"
+        ) from exc
+
+    try:
+        reader = PdfReader(str(path))
+        pages = [page.extract_text() or "" for page in reader.pages]
+        content = "\n\n".join(pages).strip()
+        logger.info(
+            "Loaded PDF document: %s (%d pages, %d chars)",
+            path.name,
+            len(reader.pages),
+            len(content),
         )
-
-    logger.debug(f"Reading PDF file: {path}")
-    reader = PdfReader(str(path))
-    pages = []
-
-    for i, page in enumerate(reader.pages):
-        text = page.extract_text()
-        if text:
-            pages.append(text)
-            logger.debug(f"Extracted {len(text)} chars from page {i + 1}")
-        else:
-            logger.warning(f"Page {i + 1} yielded no text (may be image-based)")
-
-    full_text = "\n\n".join(pages)
-    logger.info(
-        f"PDF extracted: {len(reader.pages)} pages, {len(full_text)} characters"
-    )
-    return full_text
+        return content
+    except Exception:
+        logger.exception("Failed to read PDF file: %s", path)
+        raise

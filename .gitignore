@@ -11,12 +11,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-.env
-venv/
-.venv/
-.env.bak
-venv.bak/
-.venv.bak/
 
 # IDE
 .vscode/
@@ -32,10 +26,6 @@ htmlcov/
 .pytest_cache/
 .tox/
 
-# Logs
-*/*.log
-logs/
-
 # Temporary files
 tmp/
 temp/
@@ -44,6 +34,9 @@ temp/
 # Generated reports
 reports/
 output/
+
+# Logs
+logs/
 
 # Google ADK
 .adk/

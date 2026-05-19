@@ -1,171 +1,205 @@
 """
-Smart Backlog Assistant - Main Entry Point
-==========================================
-Run this to process meeting notes or requirement documents
-and generate structured backlog items.
+main.py
+-------
+Entry point for the Smart Backlog Assistant.
 
-Usage:
-    python main.py --input inputs/sample_meeting_notes.txt
-    python main.py --input inputs/sample_requirements.pdf --backlog inputs/sample_backlog.json
-    python main.py --help
+Usage
+-----
+    # OpenAI (default):
+    python main.py --spec inputs/sample_requirements.txt
+
+    # Anthropic Claude:
+    AI_PROVIDER=anthropic python main.py --spec inputs/sample_requirements.txt
+
+    # Or set AI_PROVIDER in your .env file and run normally.
+
+    # Single-step prompts:
+    python main.py --spec inputs/sample_requirements.txt \
+                   --prompt "What are the user stories for this product?"
+
+    # Include an existing backlog for context:
+    python main.py --spec inputs/sample_requirements.txt \
+                   --backlog inputs/sample_backlog.json
+
+Run ``python main.py --help`` for all options.
 """
 
 import argparse
-import json
 import logging
 import os
 import sys
-from pathlib import Path
 
+from dotenv import load_dotenv
+
+from src.ai_client import build_client
+from src.backlog_loader import format_backlog_for_context, load_backlog
 from src.document_loader import load_document
-from src.backlog_loader import load_backlog
-from src.ai_client import get_ai_client
+from src.formatter import format_and_save, print_summary
 from src.processor import BacklogProcessor
-from src.formatter import format_output
 
 # ---------------------------------------------------------------------------
-# Logging setup - adjust level via --verbose flag
+# Logging
 # ---------------------------------------------------------------------------
-# Ensure logs directory exists
+
 os.makedirs("logs", exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - [%(levelname)s] - %(message)s",
-    datefmt="%H:%M:%S",
+    format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler("logs/smart-backlog-assistant.log"),
+        logging.FileHandler("logs/main.log"),
         logging.StreamHandler(),
     ],
 )
 logger = logging.getLogger(__name__)
 
+DEFAULT_PROMPT = "What would the development tasks for this product be?"
 
-def parse_args():
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Smart Backlog Assistant: turn meeting notes into structured backlog items."
+        prog="smart-backlog-assistant",
+        description=(
+            "Smart Backlog Assistant - AI-powered tool that converts a product "
+            "specification into user stories, features, and development tasks."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+            Examples:
+            python main.py --spec inputs/sample_requirements.txt
+            python main.py --spec inputs/sample_requirements.txt --provider anthropic
+            python main.py --spec inputs/sample_meeting_notes.txt --prompt "What are the user stories?"
+            python main.py --spec inputs/sample_requirements.txt --backlog inputs/sample_backlog.json
+        """,
     )
     parser.add_argument(
-        "--input",
-        "-i",
+        "--spec",
         required=True,
-        help="Path to meeting notes (.txt) or requirements document (.pdf)",
+        help="Path to the product specification file (.txt or .pdf).",
     )
     parser.add_argument(
-        "--backlog",
-        "-b",
-        default=None,
-        help="(Optional) Path to existing backlog JSON file for context",
-    )
-    parser.add_argument(
-        "--output",
-        "-o",
-        default=None,
-        help="(Optional) Path to write output JSON. Defaults to outputs/result.json",
+        "--prompt",
+        default=DEFAULT_PROMPT,
+        help=f'Workflow prompt. Default: "{DEFAULT_PROMPT}"',
     )
     parser.add_argument(
         "--provider",
-        "-p",
-        choices=["anthropic", "openai"],
         default=None,
-        help="AI provider to use. Auto-detected from environment if not set.",
+        choices=["openai", "anthropic"],
+        help=(
+            "AI provider to use. Overrides the AI_PROVIDER env var. "
+            "Default: openai. When using 'anthropic', set ANTHROPIC_API_KEY "
+            "and OPENAI_API_KEY (for embeddings) in your .env file."
+        ),
     )
     parser.add_argument(
-        "--verbose",
-        "-v",
-        action="store_true",
-        help="Enable debug logging",
+        "--model",
+        default=None,
+        help=(
+            "Chat model override. E.g. 'gpt-4o-mini' for OpenAI or "
+            "'claude-sonnet-4-6' for Anthropic. "
+            "Overrides the OPENAI_BASE_MODEL or ANTHROPIC_BASE_MODEL env var."
+        ),
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--backlog",
+        default=None,
+        help="Path to an existing backlog JSON file (optional).",
+    )
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="Output file path. Defaults to outputs/backlog_<timestamp>.md",
+    )
+    parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=5,
+        help="Max evaluation/correction loops per step (default: 5).",
+    )
+    return parser
 
 
-def main():
-    args = parse_args()
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
 
-    # ------------------------------------------------------------------
-    # 1. Load input document
-    # ------------------------------------------------------------------
-    logger.info(f"Loading input document: {args.input}")
+def main() -> int:
+    load_dotenv()
+
+    parser = build_parser()
+    args = parser.parse_args()
+
+    # --- Build AI client ---
     try:
-        document_text = load_document(args.input)
-        logger.debug(f"Document loaded ({len(document_text)} chars)")
-    except FileNotFoundError:
-        logger.error(f"Input file not found: {args.input}")
-        sys.exit(1)
+        client = build_client(provider=args.provider, chat_model=args.model)
     except ValueError as e:
-        logger.error(f"Unsupported file format: {e}")
-        sys.exit(1)
+        logger.exception("AI client configuration error: %s", e)
+        print(f"\nERROR: {e}\n")
+        return 1
 
-    # ------------------------------------------------------------------
-    # 2. Load existing backlog (optional)
-    # ------------------------------------------------------------------
-    existing_backlog = []
+    print(f"\nProvider : {client.provider}")
+    print(f"\nModel : {client.chat_model}")
+
+    # --- Load spec ---
+    try:
+        product_spec = load_document(args.spec)
+    except FileNotFoundError:
+        logger.error("Spec file not found: %s", args.spec)
+        print(f"\nERROR: Spec file not found: {args.spec}\n")
+        return 1
+    except ValueError as e:
+        logger.exception("Unsupported spec format: %s", e)
+        print(f"\nERROR: {e}\n")
+        return 1
+
+    # --- Load backlog (optional) ---
     if args.backlog:
-        logger.info(f"Loading existing backlog: {args.backlog}")
-        try:
-            existing_backlog = load_backlog(args.backlog)
-            logger.info(f"Found {len(existing_backlog)} existing backlog items")
-        except Exception as e:
-            logger.warning(f"Could not load backlog file: {e}. Continuing without it.")
+        backlog_items = load_backlog(args.backlog)
+        backlog_context = format_backlog_for_context(backlog_items)
+        if backlog_context:
+            product_spec = f"{product_spec}\n\n{backlog_context}"
+            logger.info("Backlog context appended to product spec.")
 
-    # ------------------------------------------------------------------
-    # 3. Initialise AI client (provider auto-detected or specified)
-    # ------------------------------------------------------------------
-    logger.info("Initialising AI client...")
+    # --- Build processor ---
+    logger.info("Initializing BacklogProcessor...")
+    print("\nInitializing agents...")
     try:
-        ai_client = get_ai_client(provider=args.provider)
-        logger.info(f"Using provider: {ai_client.provider_name}")
-    except EnvironmentError as e:
-        logger.error(str(e))
-        logger.error(
-            "Set ANTHROPIC_API_KEY or OPENAI_API_KEY in your environment, "
-            "or copy .env.example to .env and fill in your key."
+        processor = BacklogProcessor(
+            product_spec=product_spec,
+            client=client,
+            max_eval_iterations=args.max_iterations,
         )
-        sys.exit(1)
+    except Exception:
+        logger.exception("Failed to initialize BacklogProcessor.")
+        print("\nERROR: Failed to initialize agents. Check logs/main.log for details.\n")
+        return 1
 
-    # ------------------------------------------------------------------
-    # 4. Process document → structured backlog items
-    # ------------------------------------------------------------------
-    logger.info("Processing document with AI...")
-    processor = BacklogProcessor(ai_client)
-
+    # --- Run workflow ---
     try:
-        result = processor.process(
-            document_text=document_text,
-            existing_backlog=existing_backlog,
-        )
-    except Exception as e:
-        logger.error(f"Processing failed: {e}")
-        if args.verbose:
-            raise
-        sys.exit(1)
+        result = processor.run(args.prompt)
+    except Exception:
+        logger.exception("Workflow execution failed.")
+        print("\nERROR: Workflow failed. Check logs/main.log for details.\n")
+        return 1
 
-    # ------------------------------------------------------------------
-    # 5. Format and save output
-    # ------------------------------------------------------------------
-    output_path = args.output or "outputs/result.json"
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    # --- Format and save ---
+    try:
+        output_path = format_and_save(result, prompt=args.prompt)
+        print(f"\nOutput saved to: {output_path}")
+    except Exception:
+        logger.exception("Failed to save output.")
+        print("\nWARNING: Could not save output file.")
 
-    formatted = format_output(result)
-
-    with open(output_path, "w") as f:
-        json.dump(formatted, f, indent=2)
-
-    logger.info(f"Output written to: {output_path}")
-
-    # Print a human-readable summary to stdout
-    print("\n" + "=" * 60)
-    print("SMART BACKLOG ASSISTANT - RESULTS")
-    print("=" * 60)
-    print(f"\nKey Requirements Identified: {len(result.get('requirements', []))}")
-    print(f"User Stories Generated:       {len(result.get('user_stories', []))}")
-    print(f"\n--- Summary ---\n{result.get('summary', 'N/A')}")
-    print(f"\nFull output saved to: {output_path}")
-    print("=" * 60 + "\n")
+    print_summary(result)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

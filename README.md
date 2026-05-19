@@ -1,22 +1,9 @@
-# Smart Backlog Assistant 🧠
+# Smart Backlog Assistant
 
-A CLI tool that processes meeting notes or requirements documents and generates structured engineering backlog items using AI.
-
-[placeholder]
-
----
-
-## What It Does
-
-1. **Reads** a meeting notes file (`.txt`) or requirements document (`.pdf`)
-2. **Optionally loads** an existing backlog (`.json`) for context
-3. **Calls an AI API** (Anthropic Claude or OpenAI GPT - your choice)
-4. **Outputs** structured backlog items including:
-   - Key requirements identified
-   - User stories with acceptance criteria (Given/When/Then)
-   - Priority and complexity estimates
-   - Flagged duplicates with existing backlog
-   - Open questions / ambiguities
+An AI-powered tool that converts a product specification document into a
+structured development backlog - user stories, product features, and
+engineering tasks - using a multi-agent workflow built on OpenAI's
+and Anthropic's API.
 
 ---
 
@@ -25,165 +12,290 @@ A CLI tool that processes meeting notes or requirements documents and generates 
 ```txt
 smart-backlog-assistant/
 ├── main.py                         # Entry point - CLI argument handling
+├── agents/
+│   ├── __init__.py
+│   └── base_agents.py              # Agent class library (DirectPromptAgent,
+│                                   # KnowledgeAugmentedPromptAgent,
+│                                   # EvaluationAgent, RoutingAgent,
+│                                   # ActionPlanningAgent, RAGKnowledgePromptAgent)
 ├── src/
-│   ├── ai_client.py                # AI provider abstraction (Anthropic + OpenAI)
-│   ├── processor.py                # Core logic + PROMPT ENGINEERING lives here
-│   ├── document_loader.py          # Loads .txt and .pdf files
-│   ├── backlog_loader.py           # Loads existing backlog JSON
-│   └── formatter.py                # Formats final output
+│   ├── __init__.py
+│   ├── ai_client.py                # AI provider abstraction (OpenAI + Anthropic)
+│   ├── processor.py                # Multi-agent orchestration + ALL prompt engineering
+│   ├── document_loader.py          # Loads .txt, .md and .pdf files
+│   ├── backlog_loader.py           # Loads existing backlog in JSON format for context
+│   └── formatter.py                # Formats and saves Markdown output
 ├── inputs/
-│   ├── sample_meeting_notes.txt    # Sample input 1
-│   ├── sample_requirements.txt     # Sample input 2
-│   └── sample_backlog.json         # Sample existing backlog
-├── outputs/                        # Generated results land here
+│   ├── sample_requirements.txt     # Golden test input 1 - Email Router Service spec
+│   ├── sample_meeting_notes.txt    # Golden test input 2 - Knowledge Base Assistant notes
+│   └── sample_backlog.json         # Existing backlog for incremental enrichment test
+├── outputs/                        # Generated backlog Markdown files land here
 ├── tests/
-│   └── test_processor.py           # Unit tests (run with pytest)
+│   └── test_processor.py           # Unit tests (run with pytest, no API key needed)
 ├── docs/
-│   └── CANDIDATE_NOTES.md          # Candidate notes througout the development of this project
-├── requirements.txt                # Required Python packages and libraries
-└── .env.example                    # Example for the final .env file
+│   └── CANDIDATE_NOTES.md          # Architecture, prompt engineering decisions, bug fixes
+├── requirements.txt
+└── .env.example
 ```
 
 ---
 
 ## Quick Start
 
-### 1. Clone and set up
+### Prerequisites
+
+- Python 3.13
 
 ```bash
-# Create a virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate      # macOS/Linux
-# venv\Scripts\activate       # Windows
+python -m venv .venv
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
+```
 
-# Install dependencies
+#### Install dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. Configure your API key
+#### Configure environment variables
 
 ```bash
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY or OPENAI_API_KEY
 ```
 
-### 3. Run the tool
+#### Open .env and set your OPENAI_API_KEY
+
+```txt
+...
+AI_PROVIDER=openai
+...
+OPENAI_API_KEY="voc-00000000000000000000000000000000abcd.12345678"
+OPENAI_BASE_MODEL="gpt-4o-mini"
+OPENAI_EMBEDDING_MODEL="text-embedding-3-large"
+OPENAI_BASE_URL="https://openai.vocareum.com/v1"
+...
+ANTHROPIC_API_KEY="voc-00000000000000000000000000000000abcd.12345678"
+ANTHROPIC_BASE_MODEL="claude-sonnet-4-6"
+ANTHROPIC_BASE_URL="https://claude.vocareum.com"
+...
+```
+
+### Run
 
 ```bash
-# Basic run with sample meeting notes
-python main.py --input inputs/sample_meeting_notes.txt
+# Full workflow - user stories → features → development tasks
+python main.py --spec inputs/sample_requirements.txt
 
-# With existing backlog for context
-python main.py --input inputs/sample_meeting_notes.txt \
+# Ask only for user stories
+python main.py --spec inputs/sample_requirements.txt \
+               --prompt "What are the user stories for this product?"
+
+# Use meeting notes as input
+python main.py --spec inputs/sample_meeting_notes.txt
+
+# Include an existing backlog to avoid duplicates
+python main.py --spec inputs/sample_requirements.txt \
                --backlog inputs/sample_backlog.json
 
-# Specify output file
-python main.py --input inputs/sample_requirements.txt \
-               --output outputs/pipeline_backlog.json
-
-# Force a specific AI provider
-python main.py --input inputs/sample_meeting_notes.txt --provider openai
-
-# Verbose logging (useful for debugging prompts)
-python main.py --input inputs/sample_meeting_notes.txt --verbose
+# All options
+python main.py --help
 ```
 
-### 4. Run the tests
+Output is written to `outputs/backlog_<timestamp>.md`.
+
+### Run tests
 
 ```bash
 pytest tests/ -v
+```
 
-# With coverage report
-pytest tests/ -v --cov=src
+Tests mock all API calls - no API key required.
+
+---
+
+## How It Works
+
+### Workflow overview
+
+```txt
+User prompt
+    │
+    ▼
+ActionPlanningAgent ──── extracts ordered steps (stories → features → tasks)
+    │
+    ▼
+RoutingAgent ──── cosine-similarity routing over step embeddings
+    │
+    ├──► PM support     ──► KnowledgeAugmentedPromptAgent + EvaluationAgent
+    ├──► ProgMgr support──► KnowledgeAugmentedPromptAgent + EvaluationAgent
+    └──► DevEng support ──► KnowledgeAugmentedPromptAgent + EvaluationAgent
+                                          │
+                                          ▼
+                               Validated output → formatter → outputs/
+```
+
+### Agent roles
+
+| Agent | Responsibility |
+| :--- | :--- |
+| `ActionPlanningAgent` | Parses the workflow prompt into an ordered step list |
+| `RoutingAgent` | Selects the right agent for each step via embedding similarity |
+| `KnowledgeAugmentedPromptAgent` (PM) | Generates Connextra-format user stories grounded in the product spec |
+| `KnowledgeAugmentedPromptAgent` (ProgMgr) | Groups stories into named feature cards |
+| `KnowledgeAugmentedPromptAgent` (DevEng) | Generates Jira-style development tasks |
+| `EvaluationAgent` (×3) | Runs a generate-evaluate-correct loop on each agent's output |
+
+---
+
+## Architecture Diagram
+
+```txt
+┌─────────────────────────────────────────────────────────────────┐
+│  main.py                                                        │
+│   ├── document_loader  →  reads .txt / .pdf spec                │
+│   ├── backlog_loader   →  reads existing backlog JSON           │
+│   └── BacklogProcessor (src/processor.py)                       │
+│         ├── ActionPlanningAgent                                 │
+│         │     └── gpt-4o-mini: extract steps from prompt        │
+│         │                                                       │
+│         └── RoutingAgent                                        │
+│               │  text-embedding-3-large: cosine similarity      │
+│               │                                                 │
+│               ├── _pm_support → EvaluationAgent                 │
+│               │     ├── KnowledgeAugmentedPromptAgent (PM)      │
+│               │     │     gpt-4o-mini: write user stories       │
+│               │     └── gpt-4o-mini: evaluate + correct         │
+│               │                                                 │
+│               ├── _prog_support → EvaluationAgent               │
+│               │     ├── KnowledgeAugmentedPromptAgent (Prog)    │
+│               │     └── gpt-4o-mini: evaluate + correct         │
+│               │                                                 │
+│               └── _dev_support → EvaluationAgent                │
+│                     ├── KnowledgeAugmentedPromptAgent (Dev)     │
+│                     └── gpt-4o-mini: evaluate + correct         │
+│                                                                 │
+│   └── formatter  →  writes Markdown to outputs/                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Sample Output
+## Prompt Engineering
 
-```json
-{
-  "metadata": {
-    "generated_at": "2024-01-15T10:30:00Z",
-    "version": "1.0.0"
-  },
-  "summary": "The document describes requirements for replacing a legacy customer portal...",
-  "requirements": [
-    {
-      "id": "REQ-001",
-      "description": "Support SSO via Google and Microsoft for enterprise customers",
-      "source": "Marcus wants SSO via Google and Microsoft for enterprise customers"
-    }
-  ],
-  "user_stories": [
-    {
-      "id": "US-001",
-      "title": "Enterprise user logs in via SSO",
-      "as_a": "enterprise customer",
-      "i_want": "to log in using my company Google or Microsoft account",
-      "so_that": "I don't need a separate password to manage",
-      "acceptance_criteria": [
-        "Given I am on the login page, When I click Sign in with Google, Then I am redirected to Google OAuth",
-        "Given I complete OAuth, When I am redirected back, Then I am logged in to my account"
-      ],
-      "priority": "High",
-      "category": "Feature",
-      "estimated_complexity": "M",
-      "notes": "Requires SAML vs OAuth spike - see action items"
-    }
-  ],
-  "open_questions": [
-    "Does SSO apply to all tiers or enterprise-only?"
-  ]
-}
+All prompt engineering is in `src/processor.py`.  Key decisions:
+
+**Persona strings** name the role and its explicit boundary:
+> *"You are a Product Manager. Your sole responsibility is to define user
+> stories for a product. You do not define features or tasks."*
+
+Negative constraints ("You do not define…") prevent agents from generating
+mixed output that fails evaluation.
+
+**Knowledge strings** embed the product spec in the system message (not the
+user turn) for grounding, and include the exact output format required:
+> *"Every story MUST start with: 'As a'"*
+
+**Evaluation criteria** are written as checklists rather than prose, making
+Yes/No assessment unambiguous for the evaluator model.
+
+**Routing descriptions** use role-semantic vocabulary matching the step text
+("Connextra format", "user stories", "As a … I want … so that") rather than
+infrastructure language ("Routes to the support function"), which embeds in a
+completely different semantic space and causes mis-routing.
+
+Full rationale for every prompt decision is in `docs/CANDIDATE_NOTES.md`.
+
+---
+
+## Test Inputs and Expected Outputs
+
+### Golden prompt 1 - Full workflow
+
+```bash
+python main.py --spec inputs/sample_requirements.txt
+# Prompt: "What would the development tasks for this product be?"
 ```
 
----
+**Expected output:** Three sections - user stories in Connextra format,
+feature cards with Name/Description/Key Functionality/User Benefit, and
+development tasks with Task ID/Title/Story/Description/AC/Effort/Dependencies.
 
-## Where to Focus Your Energy
+### Golden prompt 2 - User stories only
 
-The scaffold is intentionally bare in places. Here are the highest-value areas
-to improve for the assessment:
+```bash
+python main.py --spec inputs/sample_requirements.txt \
+               --prompt "What are the user stories for this product?"
+```
 
-### 🔴 High Impact
+**Expected output:** Only user stories section; RoutingAgent routes the
+single step to the Product Manager agent.
 
-- **`src/processor.py`** - Improve the prompts. Try chain-of-thought, few-shot
-  examples, or breaking the task into multiple AI calls.
-- **Prompt iteration** - Document your prompt versions and what changed.
+### Golden prompt 3 - With existing backlog
 
-### 🟡 Medium Impact
+```bash
+python main.py --spec inputs/sample_requirements.txt \
+               --backlog inputs/sample_backlog.json
+```
 
-- **Error handling** - What happens with a corrupted PDF? A 10,000-word doc?
-- **Output quality checks** - Validate the AI output before writing it.
-- **Retry logic** - If the AI returns malformed JSON, prompt it to try again.
-
-### 🟢 Nice to Have
-
-- **New input formats** - Add `.docx` support, or accept a URL.
-- **New output formats** - Generate a Markdown report alongside the JSON.
-- **Streaming** - Show output progressively rather than waiting for full response.
-- **Integration** - Push stories directly to a Jira/Linear/GitHub project.
-
----
-
-## Evaluation Checklist
-
-Before submitting, verify:
-
-- [ ] `python main.py --input inputs/sample_meeting_notes.txt` runs successfully
-- [ ] `pytest tests/` passes all tests
-- [ ] Output JSON contains at least 3 user stories with acceptance criteria
-- [ ] Your `.env.example` is committed (never commit your actual `.env`)
-- [ ] You've documented your prompt iterations in `docs/CANDIDATE_NOTES.md`
-- [ ] Code has comments explaining non-obvious decisions
+**Expected output:** Full workflow output; existing items from
+`sample_backlog.json` are noted in the spec context so agents can avoid
+duplicating already-completed work.
 
 ---
 
-## Notes on AI Usage
+## Bug Fixes vs. Original Code
 
-This capstone project uses the Anthropic and OpenAI Python SDKs directly.
-See `src/ai_client.py` for implementation details.
+Two bugs were identified and fixed in `agents/base_agents.py` and the
+orchestration layer.  See `docs/CANDIDATE_NOTES.md` Section 4 for details.
 
-- **Anthropic docs**: <https://docs.anthropic.com>
-- **OpenAI docs**: <https://platform.openai.com/docs>
-- **Prompt engineering guide**: <https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview>
+**Bug 1 - EvaluationAgent correction loop:** The original code passed the
+original prompt to the worker on every iteration, so corrections were
+generated but never applied.  Fixed by tracking `prompt_to_evaluate`
+separately and feeding the corrected prompt back into the worker.
+
+**Bug 2 - Redundant `respond()` call:** Support functions called the
+knowledge agent directly, then `evaluate()` called it again - the first
+response was wasted.  Fixed by passing the query directly to `evaluate()`.
+
+**Bug 3 - Router description language:** Infrastructure-style descriptions
+("Routes to the … support function") embed poorly against domain step text.
+Fixed by using role-semantic vocabulary.
+
+---
+
+## AI Usage Throughout Development
+
+- Problem scoping - Claude Sonnet used to critique the problem statement and
+  identify the right scope boundary.
+- Prompt iteration - gpt-4o-mini outputs were manually reviewed across 5+
+  runs; evaluation criteria were tightened based on failure modes observed.
+- Test case generation - Claude Sonnet helped draft the unit test structure
+  and identify the key behavioural assertions.
+
+---
+
+## Requirements
+
+See `requirements.txt`. Core dependencies:
+
+| Package | Purpose |
+| :--- | :--- |
+| `openai` | OpenAI API client (chat completions + embeddings) |
+| `anthropic` | Anthropic API client (chat completions) |
+| `python-dotenv` | Load `.env` file |
+| `numpy` | Cosine similarity computation |
+| `pandas` | RAG chunk/embedding storage |
+| `pypdf` | PDF text extraction |
+| `pytest` | Test runner |
+
+---
+
+> **Candidate note**: [Anthropic](https://platform.claude.com/docs/en/build-with-claude/embeddings) does not have its own native embeddings model. Instead of developing first-party embeddings, Anthropic officially partners with and recommends Voyage AI.
+
+### Recommended Alternatives
+
+While Voyage AI is the preferred partner, developers commonly use a few different options for generating text embeddings to feed into Anthropic-powered retrieval-augmented generation (RAG) pipelines:
+
+- **Voyage AI**: Anthropic’s official partner. They offer state-of-the-art, customizable embeddings for general use, as well as domain-specific models for finance and healthcare.
+- **OpenAI**: Widely used and highly accessible (e.g., text-embedding-3-small or text-embedding-3-large).
+- **Cohere**: Another popular industry standard for high-quality semantic search.

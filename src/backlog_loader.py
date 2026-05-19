@@ -1,64 +1,102 @@
 """
 src/backlog_loader.py
-=====================
-Loads existing backlog items from a JSON file.
+---------------------
+Loads an existing backlog from a JSON file.
 
-Expected JSON format (flexible):
-  - Array of objects, each with at minimum an "id" and "title" or "summary"
-  - Additional fields (status, priority, etc.) are passed through as-is
+The backlog is injected into the processor's product spec so agents can
+take existing items into account (e.g. avoid duplicating stories, or add
+tasks for stories not yet covered).
 
-Candidate note: extend this to support:
-  - Jira REST API
-  - Linear API
-  - GitHub Issues API
-  - CSV export from project management tools
+Expected JSON schema (flexible - all fields are optional):
+    {
+        "items": [
+            {
+                "id":          "STORY-001",
+                "type":        "user_story" | "feature" | "task",
+                "title":       "Short title",
+                "description": "Full text of the item",
+                "status":      "todo" | "in_progress" | "done",
+                "priority":    "high" | "medium" | "low"
+            },
+            ...
+        ]
+    }
 """
 
 import json
 import logging
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Load backlog helper
+# ---------------------------------------------------------------------------
 
-def load_backlog(path: str) -> list[dict[str, Any]]:
+def load_backlog(path: str) -> list[dict]:
     """
-    Load existing backlog items from a JSON file.
+    Load backlog items from a JSON file.
 
-    Args:
-        path: Path to a JSON file containing backlog items.
+    Parameters
+    ----------
+    path : str
+        Path to the backlog JSON file.
 
-    Returns:
-        List of backlog item dicts.
-
-    Raises:
-        FileNotFoundError: If the file does not exist.
-        ValueError: If the file is not valid JSON or not a list.
+    Returns
+    -------
+    list[dict]
+        List of backlog item dicts.  Empty list if the file is missing or empty.
     """
-    file_path = Path(path)
+    p = Path(path)
 
-    if not file_path.exists():
-        raise FileNotFoundError(f"Backlog file not found: {path}")
-
-    logger.debug(f"Loading backlog from: {path}")
+    if not p.exists():
+        logger.warning(
+            "Backlog file not found: %s - starting with empty backlog.", path
+        )
+        return []
 
     try:
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON in backlog file: {e}")
+        raw = json.loads(p.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        logger.exception("Invalid JSON in backlog file: %s", path)
+        return []
 
-    # Support both top-level array and {"items": [...]} wrapper
-    if isinstance(data, list):
-        items = data
-    elif isinstance(data, dict) and "items" in data:
-        items = data["items"]
-    else:
-        raise ValueError(
-            "Backlog JSON must be an array of items, "
-            "or an object with an 'items' array."
-        )
+    items = raw.get("items", []) if isinstance(raw, dict) else raw
+    if not isinstance(items, list):
+        logger.warning("Unexpected backlog format in %s - expected a list.", path)
+        return []
 
-    logger.info(f"Loaded {len(items)} backlog items")
+    logger.info("Loaded %d backlog items from %s", len(items), path)
     return items
+
+# ---------------------------------------------------------------------------
+# Format backlog helper
+# ---------------------------------------------------------------------------
+
+def format_backlog_for_context(items: list[dict]) -> str:
+    """
+    Format backlog items as a readable string for injection into a knowledge string.
+
+    Parameters
+    ----------
+    items : list[dict]
+        Items returned by ``load_backlog``.
+
+    Returns
+    -------
+    str
+        Human-readable summary of existing backlog items, or an empty string
+        when *items* is empty.
+    """
+    if not items:
+        return ""
+
+    lines = ["Existing backlog items (do not duplicate these):\n"]
+    for item in items:
+        item_id = item.get("id", "-")
+        item_type = item.get("type", "item")
+        title = item.get("title", "(no title)")
+        status = item.get("status", "unknown")
+        lines.append(f"  [{item_id}] ({item_type}) {title} - status: {status}")
+
+    return "\n".join(lines)

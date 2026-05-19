@@ -1,220 +1,449 @@
 """
 src/processor.py
-================
-Core logic: sends documents to the AI and parses structured responses.
+----------------
+Core orchestration layer for the Smart Backlog Assistant.
 
-This is where PROMPT ENGINEERING lives - the most important file
-for candidates to study, modify, and improve.
+ALL prompt engineering lives here: persona strings, knowledge strings,
+evaluation criteria, and routing descriptions are defined and documented in
+this module. The agent classes in ``agents/base_agents.py`` are intentionally
+prompt-agnostic - they provide the execution machinery; this file provides the
+domain knowledge.
 
-Candidate note: experiment with:
-  - System prompt tone and persona
-  - Output format instructions (JSON schema, examples)
-  - How existing backlog context is injected
-  - Breaking the task into multiple smaller prompts (chain-of-thought)
+Workflow
+--------
+1. ``BacklogProcessor`` is instantiated with a product spec string and an
+   ``AIClient`` (from ``src.ai_client``).
+2. ``_build()`` assembles and wires all agents, passing the client to each one.
+3. ``run(prompt)`` feeds the prompt through:
+       ActionPlanningAgent → steps
+       RoutingAgent        → dispatches each step to the right support function
+       Support function    → calls KnowledgeAugmentedPromptAgent + EvaluationAgent
+4. The final validated output (last completed step) is returned.
+
+Provider switching
+------------------
+BacklogProcessor is fully provider-agnostic. Pass any AIClient instance:
+
+    from src.ai_client import build_client
+    from src.processor import BacklogProcessor
+
+    # OpenAI
+    processor = BacklogProcessor(spec, build_client("openai"))
+
+    # Anthropic (chat) + OpenAI (embeddings for routing)
+    processor = BacklogProcessor(spec, build_client("anthropic"))
 """
 
-import json
 import logging
-import re
-from typing import Any
 
-from src.ai_client import AIClient
+from agents.base_agents import (
+    ActionPlanningAgent,
+    EvaluationAgent,
+    KnowledgeAugmentedPromptAgent,
+    RoutingAgent,
+)
 
 logger = logging.getLogger(__name__)
 
-
 # ---------------------------------------------------------------------------
-# Prompts - separated from logic so candidates can iterate quickly
+# BacklogProcessor
 # ---------------------------------------------------------------------------
-
-SYSTEM_PROMPT = """You are an experienced agile delivery lead and software architect.
-Your job is to analyse meeting notes or requirement documents and produce
-structured, actionable engineering backlog items.
-
-You produce clear, developer-friendly outputs that are:
-- Specific and testable
-- Sized appropriately (not too broad, not too granular)
-- Written in plain language a developer can act on immediately
-
-You always respond with valid JSON only - no markdown fences, no prose outside the JSON.
-"""
-
-USER_PROMPT_TEMPLATE = """Analyse the following document and produce structured backlog output.
-
-## Input Document
-{document_text}
-
-{backlog_context}
-
-## Required Output Format (JSON)
-Return a JSON object with exactly these keys:
-
-{{
-  "summary": "2-3 sentence summary of the key themes in the document",
-  "requirements": [
-    {{
-      "id": "REQ-001",
-      "description": "Clear description of the requirement",
-      "source": "Direct quote or paraphrase from the document"
-    }}
-  ],
-  "user_stories": [
-    {{
-      "id": "US-001",
-      "title": "Short title (5-8 words)",
-      "as_a": "type of user",
-      "i_want": "goal or action",
-      "so_that": "business value or outcome",
-      "acceptance_criteria": [
-        "Given <context>, When <action>, Then <outcome>",
-        "..."
-      ],
-      "priority": "High | Medium | Low",
-      "category": "Feature | Bug | Tech Debt | Spike | Improvement",
-      "estimated_complexity": "XS | S | M | L | XL",
-      "notes": "Optional implementation notes or open questions"
-    }}
-  ],
-  "duplicates_or_conflicts": [
-    {{
-      "description": "Description of any overlap with existing backlog items",
-      "existing_item_id": "ID from existing backlog if applicable"
-    }}
-  ],
-  "open_questions": [
-    "Any ambiguities or missing information that should be clarified"
-  ]
-}}
-
-Guidelines:
-- Generate between 3 and 8 user stories depending on document complexity
-- Acceptance criteria should be concrete and testable (Given/When/Then format)
-- Priority should reflect business value and urgency
-- Flag any requirements that overlap with existing backlog items
-- Note anything that is unclear or needs stakeholder clarification
-"""
-
-BACKLOG_CONTEXT_TEMPLATE = """## Existing Backlog ({count} items)
-Review these existing items to avoid duplication and identify conflicts:
-
-{items}
-"""
-
 
 class BacklogProcessor:
     """
-    Orchestrates the document → backlog pipeline.
+    Orchestrates the full multi-agent backlog generation workflow.
 
-    Candidate note: this is a good place to add:
-      - Multi-step processing (extract requirements first, then generate stories)
-      - Validation of AI output
-      - Retry logic for malformed responses
-      - Chunking for large documents
+    Parameters
+    ----------
+    product_spec : str
+        Raw text of the product specification document.
+    client : AIClient
+        Configured AI client from ``src.ai_client.build_client()``.
+    max_eval_iterations : int
+        Maximum correction loops the EvaluationAgent may run per step.
+        Default 5 keeps costs reasonable while allowing meaningful refinement.
     """
 
-    def __init__(self, ai_client: AIClient):
-        self.ai_client = ai_client
+    def __init__(self, product_spec: str, client, max_eval_iterations: int = 5):
+        self.product_spec = product_spec
+        self.client = client
+        self.max_eval_iterations = max_eval_iterations
 
-    def process(
-        self,
-        document_text: str,
-        existing_backlog: list[dict[str, Any]] | None = None,
-    ) -> dict[str, Any]:
-        """
-        Process a document and return structured backlog data.
+        self._agents_built = False
+        self._build()
 
-        Args:
-            document_text:    Raw text content of the input document.
-            existing_backlog: List of existing backlog item dicts (optional).
+    # -----------------------------------------------------------------------
+    # Agent assembly - all prompt engineering is here
+    # -----------------------------------------------------------------------
 
-        Returns:
-            Parsed dict matching the output schema defined in USER_PROMPT_TEMPLATE.
-        """
-        existing_backlog = existing_backlog or []
+    def _build(self):
+        """Instantiate and wire all agents. Called once during __init__."""
 
-        # Build context block for existing backlog items
-        backlog_context = self._build_backlog_context(existing_backlog)
+        client = self.client
+        spec = self.product_spec
+        max_it = self.max_eval_iterations
 
-        # Construct the full user prompt
-        user_prompt = USER_PROMPT_TEMPLATE.format(
-            document_text=document_text.strip(),
-            backlog_context=backlog_context,
+        # ===================================================================
+        # ACTION PLANNING AGENT
+        # ===================================================================
+        # WHY: The knowledge string explicitly lists the three deliverable
+        # types (stories, features, tasks) and their relationships. This
+        # constrains the planner so it never invents steps outside the
+        # workflow (e.g. "deploy to production") that would confuse the router.
+        # ===================================================================
+        knowledge_action_planning = (
+            "A development plan for a product is produced in three ordered steps:\n"
+            "1. Define user stories from the product specification - sentences in the form 'As a `persona`, I want "
+            "`action` so that `outcome`'. Each story maps to one specific product "
+            "functionality.\n"
+            "2. Using the user stories defined in step 1, define features by grouping related stories - group related user stories into named capabilities "
+            "that describe what the product does at a higher level.\n"
+            "3. Using the user stories defined in step 1, define development tasks for each story - for each user story, list the engineering "
+            "work required: what must be built, acceptance criteria, effort, and "
+            "dependencies.\n"
+            "A full development plan contains all three components in this order."
         )
 
-        logger.debug("System prompt length: %d chars", len(SYSTEM_PROMPT))
-        logger.debug("User prompt length: %d chars", len(user_prompt))
-
-        # Call the AI
-        raw_response = self.ai_client.complete(
-            system_prompt=SYSTEM_PROMPT,
-            user_prompt=user_prompt,
+        self.action_planning_agent = ActionPlanningAgent(
+            client=client,
+            knowledge=knowledge_action_planning,
         )
 
-        logger.debug(
-            "Raw AI response:\n%s",
-            raw_response[:500] + "..." if len(raw_response) > 500 else raw_response,
+        # ===================================================================
+        # PRODUCT MANAGER - knowledge agent
+        # ===================================================================
+        # WHY persona: Naming the role ("Product Manager") and responsibility
+        # ("defining user stories") focuses the model on story format and
+        # prevents it from generating features or tasks unprompted.
+        #
+        # WHY knowledge: The product spec is embedded directly so the agent
+        # generates stories grounded in THIS product, not generic examples.
+        # The format reminder ("sentences always start with 'As a'") is
+        # placed inside the knowledge string so it is active whenever the
+        # spec is in context.
+        # ===================================================================
+        persona_product_manager = (
+            "You are a Product Manager. Your sole responsibility is to define "
+            "user stories for a product. You do not define features or tasks."
+        )
+        knowledge_product_manager = (
+            "User stories are defined by writing sentences that describe a persona, "
+            "an action, and a desired outcome.\n"
+            "Every story MUST start with: 'As a'\n"
+            "Write stories that cover all the personas who interact with this product.\n"
+            "Each story should represent one specific piece of functionality.\n\n"
+            f"Product specification:\n{spec}"
         )
 
-        # Parse and validate the response
-        result = self._parse_response(raw_response)
+        self._pm_knowledge_agent = KnowledgeAugmentedPromptAgent(
+            client=client,
+            persona=persona_product_manager,
+            knowledge=knowledge_product_manager,
+        )
 
+        # ===================================================================
+        # PRODUCT MANAGER - evaluation agent
+        # ===================================================================
+        # WHY criteria: The canonical Connextra format is spelled out
+        # explicitly so the evaluator has an unambiguous pass/fail test.
+        # ===================================================================
+        criteria_pm = (
+            "The answer should consist exclusively of user stories that follow "
+            "this exact structure:\n"
+            "  As a [type of user], I want [an action or feature] so that [benefit/value].\n\n"
+            "Each story must be:\n"
+            "  - Clear and concise\n"
+            "  - Focused on a single, specific user need\n"
+            "  - Free of technical implementation details\n"
+            "  - Written from the user's perspective, not the system's"
+        )
+
+        self._pm_eval_agent = EvaluationAgent(
+            client=client,
+            persona=(
+                "You are a quality-assurance agent that evaluates the output of a "
+                "Product Manager. You check whether user stories follow correct format "
+                "and content standards."
+            ),
+            evaluation_criteria=criteria_pm,
+            worker_agent=self._pm_knowledge_agent,
+            max_interactions=max_it,
+        )
+
+        # ===================================================================
+        # PROGRAM MANAGER - knowledge agent
+        # ===================================================================
+        persona_program_manager = (
+            "You are a Program Manager. Your sole responsibility is to define "
+            "product features by grouping related user stories. You do not "
+            "write individual user stories or define engineering tasks."
+        )
+        knowledge_program_manager = (
+            "Product features are defined by organizing related user stories into "
+            "cohesive, named groups.\n"
+            "Each feature must include:\n"
+            "  Feature Name      : A clear, concise title that identifies the capability\n"
+            "  Description       : What the feature does and its purpose\n"
+            "  Key Functionality : The specific capabilities the feature provides\n"
+            "  User Benefit      : How this feature creates value for the user\n\n"
+            "Group stories by the common outcome or persona they serve.\n"
+            "A feature should contain at least two related stories."
+        )
+
+        self._prog_knowledge_agent = KnowledgeAugmentedPromptAgent(
+            client=client,
+            persona=persona_program_manager,
+            knowledge=knowledge_program_manager,
+        )
+
+        # ===================================================================
+        # PROGRAM MANAGER - evaluation agent
+        # ===================================================================
+        criteria_prog = (
+            "The answer should consist of product features that each follow "
+            "this exact structure:\n"
+            "  Feature Name      : A clear, concise title that identifies the capability\n"
+            "  Description       : A brief explanation of what the feature does and its purpose\n"
+            "  Key Functionality : The specific capabilities or actions the feature provides\n"
+            "  User Benefit      : How this feature creates value for the user\n\n"
+            "Each feature must group at least two related user stories. "
+            "Features must not contain individual task-level implementation details."
+        )
+
+        self._prog_eval_agent = EvaluationAgent(
+            client=client,
+            persona=(
+                "You are a quality-assurance agent that evaluates the output of a "
+                "Program Manager. You check whether product features follow correct "
+                "format and have been properly grouped from user stories."
+            ),
+            evaluation_criteria=criteria_prog,
+            worker_agent=self._prog_knowledge_agent,
+            max_interactions=max_it,
+        )
+
+        # ===================================================================
+        # DEVELOPMENT ENGINEER - knowledge agent
+        # ===================================================================
+        persona_dev_engineer = (
+            "You are a Development Engineer. Your sole responsibility is to define "
+            "engineering development tasks for each user story. You do not write "
+            "user stories or group features."
+        )
+        knowledge_dev_engineer = (
+            "Development tasks are defined by identifying what must be built to "
+            "implement each user story.\n"
+            "Each task must include:\n"
+            "  Task ID            : A unique identifier (e.g. TASK-001)\n"
+            "  Task Title         : A brief description of the specific work\n"
+            "  Related User Story : Reference to the parent user story\n"
+            "  Description        : Detailed explanation of the technical work required\n"
+            "  Acceptance Criteria: Specific, testable requirements for completion\n"
+            "  Estimated Effort   : Time or complexity estimate (e.g. 2h, 3 story points)\n"
+            "  Dependencies       : Any tasks that must be completed first (or 'None')\n\n"
+            "Write at least one task per user story. Tasks should be small enough "
+            "to be completed in one sprint."
+        )
+
+        self._dev_knowledge_agent = KnowledgeAugmentedPromptAgent(
+            client=client,
+            persona=persona_dev_engineer,
+            knowledge=knowledge_dev_engineer,
+        )
+
+        # ===================================================================
+        # DEVELOPMENT ENGINEER - evaluation agent
+        # ===================================================================
+        criteria_dev = (
+            "The answer should consist of development tasks that each follow "
+            "this exact structure:\n"
+            "  Task ID            : A unique identifier for tracking purposes\n"
+            "  Task Title         : Brief description of the specific development work\n"
+            "  Related User Story : Reference to the parent user story\n"
+            "  Description        : Detailed explanation of the technical work required\n"
+            "  Acceptance Criteria: Specific requirements that must be met for completion\n"
+            "  Estimated Effort   : Time and/or complexity estimation\n"
+            "  Dependencies       : Any tasks that must be completed first\n\n"
+            "Every user story referenced in the input must have at least one task. "
+            "Acceptance criteria must be specific and testable, not vague."
+        )
+
+        self._dev_eval_agent = EvaluationAgent(
+            client=client,
+            persona=(
+                "You are a quality-assurance agent that evaluates the output of a "
+                "Development Engineer. You check whether development tasks follow "
+                "correct structure and are sufficiently detailed."
+            ),
+            evaluation_criteria=criteria_dev,
+            worker_agent=self._dev_knowledge_agent,
+            max_interactions=max_it,
+        )
+
+        # ===================================================================
+        # ROUTING AGENT
+        # ===================================================================
+        # WHY descriptions: Role-semantic vocabulary ("user stories",
+        # "Connextra format", "As a … I want … so that") produces embeddings
+        # close to the actual step text, making routing reliable.
+        # Infrastructure language ("Routes to the … support function") embeds
+        # in a completely different semantic space and causes mis-routing. This
+        # has been improved as per Claude's suggestion over my Udacity Agentic AI
+        # P2 implementation.
+        # ===================================================================
+        self.routing_agent = RoutingAgent(
+            client=client,
+            agents=[
+                {
+                    "name": "Product Manager",
+                    "description": (
+                        "Responsible for defining product personas and user stories only. "
+                        "A user story follows the Connextra format: "
+                        "'As a `persona`, I want `action` so that `outcome`'. "
+                        "Does not define features, group stories, or create technical tasks."
+                    ),
+                    "func": self._pm_support,
+                },
+                {
+                    "name": "Program Manager",
+                    "description": (
+                        "Responsible for grouping related user stories into named product "
+                        "features. A feature describes a capability with name, description, "
+                        "key functionality, and user benefit. Does not write individual "
+                        "user stories and does not define engineering or development tasks."
+                    ),
+                    "func": self._prog_support,
+                },
+                {
+                    "name": "Development Engineer",
+                    "description": (
+                        "Responsible for writing engineering development tasks, sprint tickets, "
+                        "and technical work items for each user story. Each task has a Task ID, "
+                        "Task Title, effort estimate in story points or hours, technical acceptance "
+                        "criteria, and dependencies. Does not write user stories or define features. "
+                        "Output is a structured list of implementation tasks ready for a sprint backlog."
+                    ),
+                    "func": self._dev_support,
+                },
+            ],
+        )
+
+        self._agents_built = True
         logger.info(
-            "Processed successfully: %d requirements, %d user stories",
-            len(result.get("requirements", [])),
-            len(result.get("user_stories", [])),
+            "BacklogProcessor: all agents built (provider=%s, model=%s).",
+            client.provider,
+            client.chat_model,
         )
 
-        return result
+    # -----------------------------------------------------------------------
+    # Support functions
+    # -----------------------------------------------------------------------
+    # Each support function passes the query DIRECTLY to evaluate().
+    # The EvaluationAgent handles the first worker call internally, so there
+    # is no redundant respond() call here.
+    # -----------------------------------------------------------------------
 
-    # ------------------------------------------------------------------
-    # Private helpers
-    # ------------------------------------------------------------------
-
-    def _build_backlog_context(self, existing_backlog: list[dict]) -> str:
-        """Format existing backlog items for injection into the prompt."""
-        if not existing_backlog:
-            return ""
-
-        # Summarise each item compactly to avoid bloating the prompt
-        items_text = "\n".join(
-            f"- [{item.get('id', '?')}] {item.get('title', item.get('summary', str(item)))}"
-            for item in existing_backlog[:20]  # cap at 20 to stay within context limits
-        )
-
-        return BACKLOG_CONTEXT_TEMPLATE.format(
-            count=len(existing_backlog),
-            items=items_text,
-        )
-
-    def _parse_response(self, raw_response: str) -> dict[str, Any]:
-        """
-        Parse the AI's JSON response, with graceful fallback.
-
-        Candidate note: this is a common challenge - AI models don't always
-        return perfectly valid JSON. Consider improving this parser or
-        adding a retry prompt.
-        """
-        # Strip markdown code fences if the model added them despite instructions
-        cleaned = raw_response.strip()
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-        cleaned = re.sub(r"\s*```$", "", cleaned)
-
+    def _pm_support(self, query: str) -> str:
+        logger.info("PM support function invoked: %s", query[:80])
         try:
-            result = json.loads(cleaned)
-            logger.debug("JSON parsed successfully")
-            return result
-        except json.JSONDecodeError as e:
-            logger.warning(f"Failed to parse AI response as JSON: {e}")
-            logger.debug(f"Problematic response: {cleaned[:300]}")
+            result = self._pm_eval_agent.evaluate(query)
+            return result.get("final_response", "")
+        except Exception:
+            logger.exception("PM support function failed.")
+            return f"[ERROR] Failed to generate user stories for: {query}"
 
-            # Fallback: return a minimal valid structure with the raw text
-            # Candidates: replace this with a retry prompt to the AI
+    def _prog_support(self, query: str) -> str:
+        logger.info("Program Manager support function invoked: %s", query[:80])
+        try:
+            result = self._prog_eval_agent.evaluate(query)
+            return result.get("final_response", "")
+        except Exception:
+            logger.exception("Program Manager support function failed.")
+            return f"[ERROR] Failed to generate features for: {query}"
+
+    def _dev_support(self, query: str) -> str:
+        logger.info("Dev Engineer support function invoked: %s", query[:80])
+        try:
+            result = self._dev_eval_agent.evaluate(query)
+            return result.get("final_response", "")
+        except Exception:
+            logger.exception("Dev Engineer support function failed.")
+            return f"[ERROR] Failed to generate tasks for: {query}"
+
+    # -----------------------------------------------------------------------
+    # Public API
+    # -----------------------------------------------------------------------
+
+    def run(self, prompt: str) -> dict:
+        """
+        Execute the full agentic workflow for *prompt*.
+
+        Parameters
+        ----------
+        prompt : str
+            A natural-language request such as
+            "What would the development tasks for this product be?"
+
+        Returns
+        -------
+        dict with keys:
+            steps           : list[str]  - steps extracted by the planner
+            step_outputs    : list[str]  - output of each routed step
+            final_output    : str        - output of the last completed step
+            prompt          : str        - the original prompt
+        """
+        if not self._agents_built:
+            raise RuntimeError("Agents have not been built. Call _build() first.")
+
+        logger.info("BacklogProcessor.run() - prompt: %s", prompt)
+        print(f"\n{'='*80}")
+        print(f"Workflow prompt: {prompt}")
+        print(f"Provider: {self.client.provider} / Model: {self.client.chat_model}")
+        print(f"{'='*80}\n")
+
+        print("Extracting workflow steps via ActionPlanningAgent...")
+        workflow_steps = self.action_planning_agent.extract_steps_from_prompt(prompt)
+
+        if not workflow_steps:
+            logger.warning("No workflow steps extracted for prompt: %s", prompt)
             return {
-                "summary": "Could not parse structured response.",
-                "requirements": [],
-                "user_stories": [],
-                "duplicates_or_conflicts": [],
-                "open_questions": ["AI response could not be parsed. See raw output."],
-                "_raw_response": raw_response,
-                "_parse_error": str(e),
+                "steps": [],
+                "step_outputs": [],
+                "final_output": "",
+                "prompt": prompt,
             }
+
+        print(f"Steps extracted ({len(workflow_steps)}):")
+        for i, s in enumerate(workflow_steps, 1):
+            print(f"  {i}. {s}")
+
+        completed_outputs = []
+        accumulated_context = ""
+
+        for step in workflow_steps:
+            print(f"\n--- Executing step: {step} ---")
+            try:
+                # Inject all previous step outputs as context
+                query = f"{step}\n\n{accumulated_context}".strip() if accumulated_context else step
+                result = self.routing_agent.route(query)
+            except Exception:
+                logger.exception("Routing failed for step: %s", step)
+                result = f"[ERROR] Routing failed for step: {step}"
+
+            completed_outputs.append(result)
+            # Append this step's output to the running context for subsequent steps
+            accumulated_context += f"\nOutput from previous step:\n{result}\n"
+            print(f"Step output (truncated):\n{result[:400]}...\n")
+
+        final_output = completed_outputs[-1] if completed_outputs else ""
+
+        print(f"\n{'='*80}")
+        print("Workflow complete.")
+        print(f"{'='*80}\n")
+
+        return {
+            "steps": workflow_steps,
+            "step_outputs": completed_outputs,
+            "final_output": final_output,
+            "prompt": prompt,
+        }

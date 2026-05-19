@@ -1,37 +1,60 @@
-[
-  {
-    "id": "US-042",
-    "title": "User can reset their password via email",
-    "status": "Done",
-    "priority": "High",
-    "category": "Feature"
-  },
-  {
-    "id": "US-043",
-    "title": "User can update billing address",
-    "status": "In Progress",
-    "priority": "Medium",
-    "category": "Feature"
-  },
-  {
-    "id": "US-044",
-    "title": "Admin can export user list as CSV",
-    "status": "Backlog",
-    "priority": "Low",
-    "category": "Feature"
-  },
-  {
-    "id": "BUG-017",
-    "title": "Safari: checkout form fails on iOS 16",
-    "status": "Backlog",
-    "priority": "High",
-    "category": "Bug"
-  },
-  {
-    "id": "TD-008",
-    "title": "Upgrade Node.js from v14 to v20",
-    "status": "Backlog",
-    "priority": "Medium",
-    "category": "Tech Debt"
-  }
-]
+{
+  "items": [
+    {
+      "id": "STORY-001",
+      "type": "user_story",
+      "title": "As a support agent, I want to receive routed emails in my queue so that I only see emails relevant to my team",
+      "description": "Routing must filter emails to the correct team inbox based on the classification label assigned by the NLP engine.",
+      "status": "done",
+      "priority": "high"
+    },
+    {
+      "id": "STORY-002",
+      "type": "user_story",
+      "title": "As an IT administrator, I want to connect a mailbox via IMAP so that the system can ingest incoming emails",
+      "description": "The admin UI must expose an IMAP/SMTP connection form with host, port, username, password, and TLS settings.",
+      "status": "done",
+      "priority": "high"
+    },
+    {
+      "id": "STORY-003",
+      "type": "user_story",
+      "title": "As an IT administrator, I want to create routing rules with priority ordering so that emails are always sent to the right team",
+      "description": "Rule builder UI must support conditions (sender domain, keyword, label) with AND/OR logic and a drag-to-reorder priority list.",
+      "status": "in_progress",
+      "priority": "high"
+    },
+    {
+      "id": "FEATURE-001",
+      "type": "feature",
+      "title": "Email Ingestion",
+      "description": "Connect to mailboxes and ingest emails in real time.",
+      "status": "done",
+      "priority": "high"
+    },
+    {
+      "id": "FEATURE-002",
+      "type": "feature",
+      "title": "Routing Rules Engine",
+      "description": "No-code rule builder for administrators to configure routing logic.",
+      "status": "in_progress",
+      "priority": "high"
+    },
+    {
+      "id": "TASK-001",
+      "type": "task",
+      "title": "Implement IMAP connection module",
+      "description": "Build the IMAP client that connects to external mailboxes, polls for new emails on a configurable interval, and emits events to the ingestion queue.",
+      "status": "done",
+      "priority": "high"
+    },
+    {
+      "id": "TASK-002",
+      "type": "task",
+      "title": "Build routing rules persistence layer",
+      "description": "Design and implement the database schema and API for creating, updating, and deleting routing rules with priority ordering.",
+      "status": "in_progress",
+      "priority": "high"
+    }
+  ]
+}
