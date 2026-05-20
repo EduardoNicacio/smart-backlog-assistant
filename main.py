@@ -47,7 +47,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler("logs/main.log"),
+        logging.FileHandler("logs/agentic-workflow.log"),
         logging.StreamHandler(),
     ],
 )
