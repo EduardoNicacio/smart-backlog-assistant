@@ -42,6 +42,13 @@ smart-backlog-assistant/
 
 ## Quick Start
 
+In a terminal, clone this repository from GitHub:
+
+```bash
+git clone --recursive https://github.com/EduardoNicacio/smart-backlog-assistant.git
+cd smart-backlog-assistant/
+```
+
 ### Prerequisites
 
 - Python 3.13
@@ -51,19 +58,19 @@ python -m venv .venv
 source .venv/bin/activate       # Windows: .venv\Scripts\activate
 ```
 
-#### Install dependencies
+### Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-#### Configure environment variables
+### Configure environment variables
 
 ```bash
 cp .env.example .env
 ```
 
-#### Open .env and set your OPENAI_API_KEY
+### Open .env and set your OPENAI_API_KEY
 
 ```txt
 ...
@@ -103,7 +110,7 @@ python main.py --help
 
 Output is written to `outputs/backlog_<timestamp>.md`.
 
-### Run tests
+### Run the tests
 
 ```bash
 pytest tests/ -v
