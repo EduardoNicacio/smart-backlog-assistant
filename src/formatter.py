@@ -83,7 +83,7 @@ def _build_markdown(result: dict, title: str) -> str:
     if steps:
         lines += ["## Workflow Steps", ""]
         for i, step in enumerate(steps, 1):
-            lines.append(f"{step}. ")
+            lines.append(f"{step}")
         lines.append("")
         lines.append("---")
         lines.append("")

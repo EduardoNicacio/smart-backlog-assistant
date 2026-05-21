@@ -77,7 +77,7 @@ cp .env.example .env
 AI_PROVIDER=openai
 ...
 OPENAI_API_KEY="voc-00000000000000000000000000000000abcd.12345678"
-OPENAI_BASE_MODEL="gpt-4o-mini"
+OPENAI_BASE_MODEL="gpt-5.4-mini"
 OPENAI_EMBEDDING_MODEL="text-embedding-3-large"
 OPENAI_BASE_URL="https://openai.vocareum.com/v1"
 ...
@@ -163,23 +163,23 @@ RoutingAgent ──── cosine-similarity routing over step embeddings
 │   ├── backlog_loader   →  reads existing backlog JSON           │
 │   └── BacklogProcessor (src/processor.py)                       │
 │         ├── ActionPlanningAgent                                 │
-│         │     └── gpt-4o-mini: extract steps from prompt        │
+│         │     └── gpt-5.4-mini: extract steps from prompt        │
 │         │                                                       │
 │         └── RoutingAgent                                        │
 │               │  text-embedding-3-large: cosine similarity      │
 │               │                                                 │
 │               ├── _pm_support → EvaluationAgent                 │
 │               │     ├── KnowledgeAugmentedPromptAgent (PM)      │
-│               │     │     gpt-4o-mini: write user stories       │
-│               │     └── gpt-4o-mini: evaluate + correct         │
+│               │     │     gpt-5.4-mini: write user stories       │
+│               │     └── gpt-5.4-mini: evaluate + correct         │
 │               │                                                 │
 │               ├── _prog_support → EvaluationAgent               │
 │               │     ├── KnowledgeAugmentedPromptAgent (Prog)    │
-│               │     └── gpt-4o-mini: evaluate + correct         │
+│               │     └── gpt-5.4-mini: evaluate + correct         │
 │               │                                                 │
 │               └── _dev_support → EvaluationAgent                │
 │                     ├── KnowledgeAugmentedPromptAgent (Dev)     │
-│                     └── gpt-4o-mini: evaluate + correct         │
+│                     └── gpt-5.4-mini: evaluate + correct         │
 │                                                                 │
 │   └── formatter  →  writes Markdown to outputs/                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -274,7 +274,7 @@ Fixed by using role-semantic vocabulary.
 
 - Problem scoping - Claude Sonnet used to critique the problem statement and
   identify the right scope boundary.
-- Prompt iteration - gpt-4o-mini outputs were manually reviewed across 5+
+- Prompt iteration - gpt-5.4-mini outputs were manually reviewed across 5+
   runs; evaluation criteria were tightened based on failure modes observed.
 - Test case generation - Claude Sonnet helped draft the unit test structure
   and identify the key behavioural assertions.

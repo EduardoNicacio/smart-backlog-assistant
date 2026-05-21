@@ -76,7 +76,7 @@ full project management suite.
 └──────────────────────────────────────────────────────────┘
 ```
 
-**Data flow:**
+**Data flow**:
 
 1. User provides a product spec file and (optionally) an existing backlog.
 2. `document_loader` reads the spec; `backlog_loader` reads existing items.
@@ -114,21 +114,30 @@ is explained below.
 ### 3.1 ActionPlanningAgent - knowledge string
 
 ```txt
-A development plan for a product is produced in three ordered steps:
-1. Define user stories - ...
-2. Define features - group related user stories into named capabilities ...
-3. Define development tasks - ...
-A full development plan contains all three components in this order.
+"A full development plan for a product is produced in three ordered steps:"
+"1. Define user stories from the product specification - ..."
+"2. Define features by grouping related stories into ..."
+"3. Define development tasks - for each user story, list..."
+"IMPORTANT: Extract ONLY the steps that are explicitly requested in the prompt. "
+"If the prompt asks only for user stories, return only step 1. "
+"If the prompt asks only for features, return only step 2. "
+"If the prompt asks for development tasks or a full plan, return all three steps in order."
 ```
 
-**Why:** Explicitly naming the three deliverables and their order constrains
-the planner. Without this, gpt-4o-mini often generates additional steps
+**Why**: Explicitly naming the three deliverables and their order constrains
+the planner. Without this, gpt-5.4-mini often generates additional steps
 ("deploy to staging", "run user acceptance tests") that have no matching agent
 in the router, causing routing failures.
 
-**Iteration:** Early drafts used a single paragraph. Switching to a numbered
+**Iteration 1**: Early drafts used a single paragraph. Switching to a numbered
 list with inline definitions improved step extraction accuracy from ~60% to
 ~95% in manual testing.
+
+**Iteration 2**: The prompt above changed slightly since its initial version
+due to some issues identified in the output files from both OpenAI `gpt-5.4-mini`
+and Anthropic `claude-sonnet-4-6`, i.e., both models ran the full workflow (user
+stories, features and tasks) even when requested to identify and generate only
+user stories or features for a given product.
 
 ### 3.2 KnowledgeAugmentedPromptAgent - persona strings
 
@@ -141,7 +150,7 @@ persona_product_manager = (
 )
 ```
 
-**Why:** Without the negative constraint ("You **do not**..."), the PM agent often generated a mix of stories AND features in a
+**Why**: Without the negative constraint ("You **do not**..."), the PM agent often generated a mix of stories AND features in a
 single response, which then failed the evaluation criteria.  Explicit
 exclusions proved more reliable than relying on the evaluation loop to
 correct mixed output.
@@ -161,7 +170,7 @@ knowledge_product_manager = (
 )
 ```
 
-**Why:** Injecting the spec directly into the knowledge string (rather than
+**Why**: Injecting the spec directly into the knowledge string (rather than
 the user prompt) ensures it is always present in the system message, not the
 user turn. The model respects system-level knowledge more consistently than
 user-turn content for grounding purposes.
@@ -177,8 +186,7 @@ Criteria are written as checklists, not prose:
 
 ```python
 criteria_pm = (
-   "The answer should consist exclusively of user stories that follow "
-   "this exact structure:\n"
+   "The answer should consist exclusively of user stories that follow this exact structure:\n"
    "  As a [type of user], I want [an action or feature] so that [benefit/value].\n\n"
    "Each story must be:\n"
    "  - Clear and concise\n"
@@ -188,7 +196,7 @@ criteria_pm = (
 )
 ```
 
-**Why:** The evaluator's `eval_prompt` asks "Does the answer meet this
+**Why**: The evaluator's `eval_prompt` asks "Does the answer meet this
 criteria? Respond Yes or No". A checklist-style criteria string makes
 Yes/No assessment unambiguous. Prose criteria produced vague evaluations
 like "Mostly yes, but..." which the `evaluation.lower().startswith("yes")`
@@ -211,7 +219,7 @@ check failed to parse correctly.
 ...
 ```
 
-**Why:** The routing agent embeds both the step text and each agent
+**Why**: The routing agent embeds both the step text and each agent
 description, then selects the highest cosine similarity. Using
 system/infrastructure language ("Routes to the Product Manager support
 function") embeds in a completely different semantic space from the step
@@ -232,12 +240,12 @@ Before the fix, all three steps were consistently routed to the same agent
 
 ### Bug 1 - EvaluationAgent correction loop (base_agents.py)
 
-**Original behaviour:** After a "No" verdict, the evaluator generated
+**Original behaviour**: After a "No" verdict, the evaluator generated
 correction instructions, but then called `worker_agent.respond()` again with
 the **original prompt** - not the corrected prompt. The corrections were
 computed and immediately discarded.
 
-**Fix:** The corrected prompt (embedding the original task + previous bad
+**Fix**: The corrected prompt (embedding the original task + previous bad
 response + correction instructions) is stored in `prompt_to_evaluate` and
 passed to the worker on the next iteration.
 
@@ -256,17 +264,17 @@ prompt_to_evaluate = (
 )
 ```
 
-**Test coverage:** `TestEvaluationAgent.test_corrected_prompt_fed_back_not_original`
+**Test coverage**: `TestEvaluationAgent.test_corrected_prompt_fed_back_not_original`
 
 ### Bug 2 - Redundant respond() call in support functions (processor.py)
 
-**Original behaviour:** Each support function called `knowledge_agent.respond()`
+**Original behaviour**: Each support function called `knowledge_agent.respond()`
 then passed the result to `evaluation_agent.evaluate()`. However,
 `evaluate()` also calls `worker_agent.respond()` internally on iteration 1.
 This meant the first worker call was wasted - it generated a response that
 was immediately discarded, and the evaluation loop generated a fresh one.
 
-**Fix:** Support functions pass the query directly to `evaluate()`, which
+**Fix**: Support functions pass the query directly to `evaluate()`, which
 handles all worker calls.
 
 ```python
@@ -280,16 +288,16 @@ result = self._pm_eval_agent.evaluate(query)
 
 ### Bug 3 - Router description language (processor.py)
 
-**Original descriptions:**
+**Original descriptions**:
 > "Routes to the Product Manager support function for user story extraction."
 
-**Fixed descriptions:**
+**Fixed descriptions**:
 > "Responsible for defining product personas and user stories only. A user
 > story follows the Connextra format: 'As a `persona`, I want `action` so that
 > `outcome`'. Does not define features, group stories, or create technical
 > tasks."
 
-**Why it matters:** See Section 3.5 above.
+**Why it matters**: See Section 3.5 above.
 
 ---
 
@@ -305,11 +313,9 @@ Three prompts were used to validate the end-to-end workflow:
 | 2 | `"What are the user stories for this product?"` | PM only | Connextra-format stories |
 | 3 | `"What features should this product have?"` | ProgMgr only | Feature cards with 4 fields |
 
-### Golden prompt results
+### Golden prompt results - first iteration
 
 #### Model: Open AI gpt-4o-mini
-
----
 
 ```bash
 python .\main.py --spec .\inputs\sample_requirements.txt
@@ -329,11 +335,7 @@ python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\samp
 
 Attachment: [outputs/backlog_20260519_092730.md](/outputs/backlog_20260519_092730.md)
 
----
-
 #### Model: Anthropic claude-sonnet-4-6
-
----
 
 ```bash
 python .\main.py --spec .\inputs\sample_requirements.txt
@@ -352,6 +354,48 @@ python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\samp
 ```
 
 Attachment: [outputs/backlog_20260519_101538.md](/outputs/backlog_20260519_101538.md)
+
+### Golden prompt results - second iteration
+
+#### Model: Open AI gpt-5.4-mini
+
+```bash
+python .\main.py --spec .\inputs\sample_requirements.txt
+```
+
+Attachment: [outputs/backlog_20260521_093232.md](/outputs/backlog_20260521_093232.md)
+
+```bash
+python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
+```
+
+Attachment: [outputs/backlog_20260521_093759.md](/outputs/backlog_20260521_093759.md)
+
+```bash
+python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
+```
+
+Attachment: [outputs/backlog_20260521_094134.md](/outputs/backlog_20260521_094134.md)
+
+#### Model: Anthropic claude-sonnet-4-6
+
+```bash
+python .\main.py --spec .\inputs\sample_requirements.txt
+```
+
+Attachment: [outputs/backlog_20260521_101635.md](/outputs/backlog_20260521_101635.md)
+
+```bash
+python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
+```
+
+Attachment: [outputs/backlog_20260521_102150.md](/outputs/backlog_20260521_102150.md)
+
+```bash
+python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
+```
+
+Attachment: [outputs/backlog_20260521_104344.md](/outputs/backlog_20260521_104344.md)
 
 ### Running the tests
 

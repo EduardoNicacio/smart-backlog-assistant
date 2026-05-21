@@ -92,16 +92,14 @@ class BacklogProcessor:
         # workflow (e.g. "deploy to production") that would confuse the router.
         # ===================================================================
         knowledge_action_planning = (
-            "A development plan for a product is produced in three ordered steps:\n"
-            "1. Define user stories from the product specification - sentences in the form 'As a `persona`, I want "
-            "`action` so that `outcome`'. Each story maps to one specific product "
-            "functionality.\n"
-            "2. Using the user stories defined in step 1, define features by grouping related stories - group related user stories into named capabilities "
-            "that describe what the product does at a higher level.\n"
-            "3. Using the user stories defined in step 1, define development tasks for each story - for each user story, list the engineering "
-            "work required: what must be built, acceptance criteria, effort, and "
-            "dependencies.\n"
-            "A full development plan contains all three components in this order."
+            "A full development plan for a product is produced in three ordered steps:\n"
+            "1. Define user stories from the product specification - sentences in the form 'As a `persona`, I want `action` so that `outcome`'. Each story maps to one specific product functionality.\n"
+            "2. Define features by grouping related stories into named capabilities that describe what the product does at a higher level.\n"
+            "3. Define development tasks - for each user story, list the engineering work required: what must be built, acceptance criteria, effort, and dependencies.\n\n"
+            "IMPORTANT: Extract ONLY the steps that are explicitly requested in the prompt. "
+            "If the prompt asks only for user stories, return only step 1. "
+            "If the prompt asks only for features, return only step 2. "
+            "If the prompt asks for development tasks or a full plan, return all three steps in order."
         )
 
         self.action_planning_agent = ActionPlanningAgent(
@@ -129,9 +127,13 @@ class BacklogProcessor:
         knowledge_product_manager = (
             "User stories are defined by writing sentences that describe a persona, "
             "an action, and a desired outcome.\n"
-            "Every story MUST start with: 'As a'\n"
-            "Write stories that cover all the personas who interact with this product.\n"
-            "Each story should represent one specific piece of functionality.\n\n"
+            "Every story MUST start with: 'As a'...\n"
+            "Write ONE story per product functionality - do not combine multiple "
+            "functionalities into a single story.\n"
+            "Cover ALL personas and ALL capabilities mentioned in the specification. "
+            "Do not omit features. If the spec mentions multiple variants of a "
+            "capability (e.g. IMAP/SMTP AND Microsoft 365 AND Google Workspace), "
+            "write a separate story for each.\n\n"
             f"Product specification:\n{spec}"
         )
 
@@ -265,7 +267,9 @@ class BacklogProcessor:
             "  Estimated Effort   : Time and/or complexity estimation\n"
             "  Dependencies       : Any tasks that must be completed first\n\n"
             "Every user story referenced in the input must have at least one task. "
-            "Acceptance criteria must be specific and testable, not vague."
+            "Acceptance criteria must be specific and testable with measurable conditions "
+            "(e.g. 'emails are routed within 5 seconds', 'returns HTTP 400 when input is invalid'). "
+            "Vague criteria such as 'works correctly' or 'is displayed accurately' are not acceptable.\n"
         )
 
         self._dev_eval_agent = EvaluationAgent(

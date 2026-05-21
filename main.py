@@ -101,7 +101,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--model",
         default=None,
         help=(
-            "Chat model override. E.g. 'gpt-4o-mini' for OpenAI or "
+            "Chat model override. E.g. 'gpt-5.4-mini' for OpenAI or "
             "'claude-sonnet-4-6' for Anthropic. "
             "Overrides the OPENAI_BASE_MODEL or ANTHROPIC_BASE_MODEL env var."
         ),

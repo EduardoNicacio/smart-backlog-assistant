@@ -120,8 +120,8 @@ class AIClient:
         elif self.provider == "anthropic":
             try:
                 import anthropic as _anthropic
-
-                self._anthropic_client = _anthropic.Anthropic(api_key=self.api_key)
+                base_url = ANTHROPIC_BASE_URL if self.api_key.lower().startswith("voc") else None
+                self._anthropic_client = _anthropic.Anthropic(api_key=self.api_key, base_url=base_url)
             except ImportError as exc:
                 raise ImportError(
                     "The 'anthropic' package is required for Anthropic support. "
@@ -215,7 +215,6 @@ class AIClient:
             model=str(self.chat_model),
             messages=full_messages,
             temperature=0,
-            max_tokens=16384,
         )
         return response.choices[0].message.content or ""
 
@@ -273,7 +272,7 @@ def build_client(
         if not resolved_key:
             raise ValueError("OPENAI_API_KEY is not set. Add it to your .env file.")
 
-        resolved_model = chat_model or os.getenv("OPENAI_BASE_MODEL", "gpt-4o-mini")
+        resolved_model = chat_model or os.getenv("OPENAI_BASE_MODEL", "gpt-5.4-mini")
         if not resolved_model:
             raise ValueError("OPENAI_BASE_MODEL is not set. Add it to your .env file.")
 
