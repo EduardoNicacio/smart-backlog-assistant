@@ -25,7 +25,7 @@ Both providers are wrapped in ``AIClient``, which exposes two methods:
         Return a dense embedding vector for ``text``.
         NOTE: Anthropic does not provide a first-party embedding endpoint.
         When provider is "anthropic", embeddings fall back to OpenAI's
-        text-embedding-3-large model. Set OPENAI_API_KEY alongside
+        text-embedding-3-small model. Set OPENAI_API_KEY alongside
         ANTHROPIC_API_KEY to enable this.
 
 Factory

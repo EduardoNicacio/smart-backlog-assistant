@@ -137,8 +137,8 @@ class RAGKnowledgePromptAgent:
         self,
         client,
         persona: str,
-        chunk_size: int = 2000,
-        chunk_overlap: int = 500,
+        chunk_size: int = 1024,
+        chunk_overlap: int = 256,
     ):
         self.client = client
         self.persona = persona

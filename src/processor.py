@@ -61,10 +61,10 @@ class BacklogProcessor:
         Configured AI client from ``src.ai_client.build_client()``.
     max_eval_iterations : int
         Maximum correction loops the EvaluationAgent may run per step.
-        Default 5 keeps costs reasonable while allowing meaningful refinement.
+        Default 3 keeps costs reasonable while allowing meaningful refinement.
     """
 
-    def __init__(self, product_spec: str, client, max_eval_iterations: int = 5):
+    def __init__(self, product_spec: str, client, max_eval_iterations: int = 3):
         self.product_spec = product_spec
         self.client = client
         self.max_eval_iterations = max_eval_iterations
@@ -402,8 +402,8 @@ class BacklogProcessor:
         logger.info("BacklogProcessor.run() - prompt: %s", prompt)
         print(f"\n{'='*80}")
         print(f"Workflow prompt: {prompt}")
-        print(f"Provider: {self.client.provider} / Model: {self.client.chat_model}")
-        print(f"{'='*80}\n")
+        print(f"Provider: {self.client.provider}\nModel: {self.client.chat_model}")
+        print(f"\n{'='*80}\n")
 
         print("Extracting workflow steps via ActionPlanningAgent...")
         workflow_steps = self.action_planning_agent.extract_steps_from_prompt(prompt)

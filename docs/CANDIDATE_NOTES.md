@@ -313,29 +313,39 @@ Three prompts were used to validate the end-to-end workflow:
 | 2 | `"What are the user stories for this product?"` | PM only | Connextra-format stories |
 | 3 | `"What features should this product have?"` | ProgMgr only | Feature cards with 4 fields |
 
-### Golden prompt results - first iteration
+---
 
-#### Model: Open AI gpt-4o-mini
+### Golden prompt results
+
+---
+
+#### Model: Open AI gpt-5.4-mini
+
+---
 
 ```bash
 python .\main.py --spec .\inputs\sample_requirements.txt
 ```
 
-Attachment: [outputs/backlog_20260519_092209.md](/outputs/backlog_20260519_092209.md)
+Attachment: [outputs/backlog_20260522_113715.md](/outputs/backlog_20260522_113715.md)
 
 ```bash
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
-Attachment: [outputs/backlog_20260519_092535.md](/outputs/backlog_20260519_092535.md)
+Attachment: [outputs/backlog_20260522_114018.md](/outputs/backlog_20260522_114018.md)
 
 ```bash
 python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
 ```
 
-Attachment: [outputs/backlog_20260519_092730.md](/outputs/backlog_20260519_092730.md)
+Attachment: [outputs/backlog_20260522_114623.md](/outputs/backlog_20260522_114623.md)
+
+---
 
 #### Model: Anthropic claude-sonnet-4-6
+
+---
 
 ```bash
 python .\main.py --spec .\inputs\sample_requirements.txt
@@ -355,47 +365,7 @@ python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\samp
 
 Attachment: [outputs/backlog_20260519_101538.md](/outputs/backlog_20260519_101538.md)
 
-### Golden prompt results - second iteration
-
-#### Model: Open AI gpt-5.4-mini
-
-```bash
-python .\main.py --spec .\inputs\sample_requirements.txt
-```
-
-Attachment: [outputs/backlog_20260521_093232.md](/outputs/backlog_20260521_093232.md)
-
-```bash
-python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
-```
-
-Attachment: [outputs/backlog_20260521_093759.md](/outputs/backlog_20260521_093759.md)
-
-```bash
-python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
-```
-
-Attachment: [outputs/backlog_20260521_094134.md](/outputs/backlog_20260521_094134.md)
-
-#### Model: Anthropic claude-sonnet-4-6
-
-```bash
-python .\main.py --spec .\inputs\sample_requirements.txt
-```
-
-Attachment: [outputs/backlog_20260521_101635.md](/outputs/backlog_20260521_101635.md)
-
-```bash
-python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
-```
-
-Attachment: [outputs/backlog_20260521_102150.md](/outputs/backlog_20260521_102150.md)
-
-```bash
-python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
-```
-
-Attachment: [outputs/backlog_20260521_104344.md](/outputs/backlog_20260521_104344.md)
+---
 
 ### Running the tests
 
@@ -413,11 +383,11 @@ without a live API key. The key behavioural tests are:
 The test results can be seen below:
 
 ```bash
-(.venv) PS C:\accenture\3\smart-backlog-assistant> pytest .\tests\ -v
+(.venv) PS C:\accenture\smart-backlog-assistant> pytest .\tests\ -v
 =================================================== test session starts ====================================================
 platform win32 -- Python 3.14.4, pytest-9.0.3, pluggy-1.6.0 -- C:\accenture\3\smart-backlog-assistant\.venv\Scripts\python.exe
 cachedir: .pytest_cache
-rootdir: C:\accenture\3\smart-backlog-assistant
+rootdir: C:\accenture\smart-backlog-assistant
 plugins: anyio-4.13.0
 collected 29 items                                                                                                          
 
@@ -452,7 +422,7 @@ tests/test_processor.py::TestBacklogProcessorIntegration::test_processor_logs_pr
 tests/test_processor.py::TestBacklogProcessorIntegration::test_run_returns_expected_keys PASSED                       [100%]
 
 ==================================================== 29 passed in 0.65s ====================================================
-(.venv) PS C:\accenture\3\smart-backlog-assistant> 
+(.venv) PS C:\accenture\smart-backlog-assistant> 
 ```
 
 ---

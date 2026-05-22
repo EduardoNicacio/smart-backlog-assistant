@@ -78,7 +78,7 @@ AI_PROVIDER=openai
 ...
 OPENAI_API_KEY="voc-00000000000000000000000000000000abcd.12345678"
 OPENAI_BASE_MODEL="gpt-5.4-mini"
-OPENAI_EMBEDDING_MODEL="text-embedding-3-large"
+OPENAI_EMBEDDING_MODEL="text-embedding-3-small"
 OPENAI_BASE_URL="https://openai.vocareum.com/v1"
 ...
 ANTHROPIC_API_KEY="voc-00000000000000000000000000000000abcd.12345678"
@@ -166,7 +166,7 @@ RoutingAgent ──── cosine-similarity routing over step embeddings
 │         │     └── gpt-5.4-mini: extract steps from prompt        │
 │         │                                                       │
 │         └── RoutingAgent                                        │
-│               │  text-embedding-3-large: cosine similarity      │
+│               │  text-embedding-3-small: cosine similarity      │
 │               │                                                 │
 │               ├── _pm_support → EvaluationAgent                 │
 │               │     ├── KnowledgeAugmentedPromptAgent (PM)      │
@@ -304,5 +304,5 @@ See `requirements.txt`. Core dependencies:
 While Voyage AI is the preferred partner, developers commonly use a few different options for generating text embeddings to feed into Anthropic-powered retrieval-augmented generation (RAG) pipelines:
 
 - **Voyage AI**: Anthropic’s official partner. They offer state-of-the-art, customizable embeddings for general use, as well as domain-specific models for finance and healthcare.
-- **OpenAI**: Widely used and highly accessible (e.g., text-embedding-3-small or text-embedding-3-large).
+- **OpenAI**: Widely used and highly accessible (e.g., text-embedding-3-small or text-embedding-3-small).
 - **Cohere**: Another popular industry standard for high-quality semantic search.

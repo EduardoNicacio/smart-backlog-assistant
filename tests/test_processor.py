@@ -134,7 +134,7 @@ class TestEvaluationAgent(unittest.TestCase):
             persona="eval",
             evaluation_criteria="must start with As a",
             worker_agent=worker,
-            max_interactions=5,
+            max_interactions=3,
         )
         result = agent.evaluate("write a user story")
         self.assertEqual(result["iterations"], 1)
@@ -157,7 +157,7 @@ class TestEvaluationAgent(unittest.TestCase):
             persona="eval",
             evaluation_criteria="criteria",
             worker_agent=worker,
-            max_interactions=5,
+            max_interactions=3,
         )
         result = agent.evaluate("prompt")
         self.assertGreaterEqual(result["iterations"], 2)
@@ -183,7 +183,7 @@ class TestEvaluationAgent(unittest.TestCase):
             persona="eval",
             evaluation_criteria="criteria",
             worker_agent=worker,
-            max_interactions=5,
+            max_interactions=3,
         )
         agent.evaluate("original task")
 

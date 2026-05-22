@@ -119,8 +119,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--max-iterations",
         type=int,
-        default=5,
-        help="Max evaluation/correction loops per step (default: 5).",
+        default=3,
+        help="Max evaluation/correction loops per step (default: 3).",
     )
     return parser
 
