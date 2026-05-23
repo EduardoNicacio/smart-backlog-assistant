@@ -36,7 +36,6 @@ from src.backlog_loader import format_backlog_for_context, load_backlog
 from src.document_loader import load_document
 from src.formatter import _build_markdown
 
-
 # ---------------------------------------------------------------------------
 # Shared mock AIClient factory
 # ---------------------------------------------------------------------------
@@ -87,7 +86,9 @@ class TestKnowledgeAugmentedPromptAgent(unittest.TestCase):
 class TestActionPlanningAgent(unittest.TestCase):
 
     def test_extracts_steps_as_list(self):
-        client = _mock_client("1. Define user stories\n2. Define features\n3. Define tasks")
+        client = _mock_client(
+            "1. Define user stories\n2. Define features\n3. Define tasks"
+        )
         agent = ActionPlanningAgent(client=client, knowledge="k")
         steps = agent.extract_steps_from_prompt("What are the dev tasks?")
         self.assertEqual(len(steps), 3)
@@ -172,7 +173,9 @@ class TestEvaluationAgent(unittest.TestCase):
 
         def complete_side_effect(**kwargs):
             verdict_calls["n"] += 1
-            return "No, needs improvement." if verdict_calls["n"] == 1 else "Yes, correct."
+            return (
+                "No, needs improvement." if verdict_calls["n"] == 1 else "Yes, correct."
+            )
 
         client = _mock_client()
         client.complete.side_effect = complete_side_effect
@@ -195,8 +198,10 @@ class TestEvaluationAgent(unittest.TestCase):
         second_call_input = second_call.kwargs.get("input_text") or second_call.args[0]
 
         self.assertNotEqual(second_call_input, "original task")
-        self.assertIn("original task", second_call_input)   # original is embedded
-        self.assertIn("bad response", second_call_input)    # previous response is embedded
+        self.assertIn("original task", second_call_input)  # original is embedded
+        self.assertIn(
+            "bad response", second_call_input
+        )  # previous response is embedded
 
     def test_uses_client_complete_not_sdk_directly(self):
         """Agents must call self.client.complete(), never an SDK directly."""
@@ -226,8 +231,8 @@ class TestRoutingAgent(unittest.TestCase):
         import numpy as np
 
         input_emb = [1.0, 0.0]
-        emb_a = [0.0, 1.0]   # orthogonal - low similarity
-        emb_b = [1.0, 0.0]   # parallel   - highest similarity
+        emb_a = [0.0, 1.0]  # orthogonal - low similarity
+        emb_b = [1.0, 0.0]  # parallel   - highest similarity
 
         call_sequence = iter([input_emb, emb_a, emb_b])
         client = _mock_client()
@@ -265,10 +270,14 @@ class TestAIClient(unittest.TestCase):
     def test_build_client_raises_without_key(self):
         """build_client raises ValueError when no API key is available."""
         from src.ai_client import build_client
+
         with patch.dict("os.environ", {}, clear=True):
             # Remove both keys from env
-            env = {k: v for k, v in __import__("os").environ.items()
-                   if k not in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "AI_PROVIDER")}
+            env = {
+                k: v
+                for k, v in __import__("os").environ.items()
+                if k not in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "AI_PROVIDER")
+            }
             with patch.dict("os.environ", env, clear=True):
                 with self.assertRaises(ValueError):
                     build_client("openai", api_key="")
@@ -276,6 +285,7 @@ class TestAIClient(unittest.TestCase):
     def test_build_client_openai(self):
         """build_client returns an AIClient with correct provider."""
         from src.ai_client import AIClient, build_client
+
         with patch("src.ai_client.AIClient._init_clients"):
             client = build_client("openai", api_key="sk-test-key")
         self.assertEqual(client.provider, "openai")
@@ -283,6 +293,7 @@ class TestAIClient(unittest.TestCase):
     def test_aiclient_complete_routes_to_openai(self):
         """AIClient.complete calls _openai_complete for openai provider."""
         from src.ai_client import AIClient
+
         client = AIClient.__new__(AIClient)
         client.provider = "openai"
         client.chat_model = "gpt-4o-mini"
@@ -298,6 +309,7 @@ class TestAIClient(unittest.TestCase):
     def test_aiclient_complete_routes_to_anthropic(self):
         """AIClient.complete calls _anthropic_complete for anthropic provider."""
         from src.ai_client import AIClient
+
         client = AIClient.__new__(AIClient)
         client.provider = "anthropic"
         client.chat_model = "claude-3-haiku-20240307"
@@ -313,6 +325,7 @@ class TestAIClient(unittest.TestCase):
     def test_aiclient_embed_uses_embedding_client(self):
         """AIClient.embed calls the embedding client regardless of chat provider."""
         from src.ai_client import AIClient
+
         client = AIClient.__new__(AIClient)
         client._embedding_client = MagicMock()
         client._embedding_client.embeddings.create.return_value = MagicMock(
@@ -324,6 +337,7 @@ class TestAIClient(unittest.TestCase):
     def test_aiclient_embed_returns_empty_without_embedding_client(self):
         """AIClient.embed returns [] when no embedding client is configured."""
         from src.ai_client import AIClient
+
         client = AIClient.__new__(AIClient)
         client._embedding_client = None
         result = client.embed("some text")
@@ -339,6 +353,7 @@ class TestDocumentLoader(unittest.TestCase):
 
     def test_load_txt(self):
         import tempfile
+
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".txt", encoding="utf-8", delete=False
         ) as f:
@@ -354,6 +369,7 @@ class TestDocumentLoader(unittest.TestCase):
 
     def test_raises_on_unsupported_format(self):
         import tempfile
+
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as f:
             name = f.name
         with self.assertRaises(ValueError):
@@ -370,6 +386,7 @@ class TestBacklogLoader(unittest.TestCase):
 
     def test_load_valid_backlog(self):
         import tempfile
+
         data = {"items": [{"id": "S-1", "type": "user_story", "title": "A story"}]}
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".json", encoding="utf-8", delete=False
@@ -385,7 +402,9 @@ class TestBacklogLoader(unittest.TestCase):
         self.assertEqual(load_backlog("does_not_exist.json"), [])
 
     def test_format_backlog_for_context(self):
-        items = [{"id": "S-1", "type": "user_story", "title": "A story", "status": "done"}]
+        items = [
+            {"id": "S-1", "type": "user_story", "title": "A story", "status": "done"}
+        ]
         text = format_backlog_for_context(items)
         self.assertIn("S-1", text)
         self.assertIn("A story", text)
@@ -450,6 +469,7 @@ class TestBacklogProcessorIntegration(unittest.TestCase):
         client.embed.side_effect = embed_side_effect
 
         from src.processor import BacklogProcessor
+
         processor = BacklogProcessor(
             product_spec="A simple spec.",
             client=client,
@@ -469,6 +489,7 @@ class TestBacklogProcessorIntegration(unittest.TestCase):
 
         with self.assertLogs("src.processor", level="INFO") as log:
             from src.processor import BacklogProcessor
+
             BacklogProcessor(product_spec="spec", client=client, max_eval_iterations=1)
 
         combined = "\n".join(log.output)

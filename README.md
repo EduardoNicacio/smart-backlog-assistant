@@ -70,7 +70,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-### Open .env and set your OPENAI_API_KEY
+### Open .env and set your API key(s)
 
 ```txt
 ...
@@ -94,15 +94,13 @@ ANTHROPIC_BASE_URL="https://claude.vocareum.com"
 python main.py --spec inputs/sample_requirements.txt
 
 # Ask only for user stories
-python main.py --spec inputs/sample_requirements.txt \
-               --prompt "What are the user stories for this product?"
+python main.py --spec inputs/sample_requirements.txt --prompt "What are the user stories for this product?"
 
 # Use meeting notes as input
 python main.py --spec inputs/sample_meeting_notes.txt
 
 # Include an existing backlog to avoid duplicates
-python main.py --spec inputs/sample_requirements.txt \
-               --backlog inputs/sample_backlog.json
+python main.py --spec inputs/sample_requirements.txt --backlog inputs/sample_backlog.json
 
 # All options
 python main.py --help
