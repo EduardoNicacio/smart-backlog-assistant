@@ -240,7 +240,7 @@ Before the fix, all three steps were consistently routed to the same agent
 
 ### Bug 1 - EvaluationAgent correction loop (base_agents.py)
 
-**Original behaviour**: After a "No" verdict, the evaluator generated
+**Original behavior**: After a "No" verdict, the evaluator generated
 correction instructions, but then called `worker_agent.respond()` again with
 the **original prompt** - not the corrected prompt. The corrections were
 computed and immediately discarded.
@@ -268,7 +268,7 @@ prompt_to_evaluate = (
 
 ### Bug 2 - Redundant respond() call in support functions (processor.py)
 
-**Original behaviour**: Each support function called `knowledge_agent.respond()`
+**Original behavior**: Each support function called `knowledge_agent.respond()`
 then passed the result to `evaluation_agent.evaluate()`. However,
 `evaluate()` also calls `worker_agent.respond()` internally on iteration 1.
 This meant the first worker call was wasted - it generated a response that
@@ -324,22 +324,25 @@ Three prompts were used to validate the end-to-end workflow:
 ---
 
 ```bash
+# Executes the whole workflow with the default prompt, i.e., "What would the development tasks for this product be?"
 python .\main.py --spec .\inputs\sample_requirements.txt
 ```
 
-Attachment: [outputs/backlog_20260522_113715.md](/outputs/backlog_20260522_113715.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260522_113715.md](/outputs/openai/gpt-5.4-mini/backlog_20260522_113715.md)
 
 ```bash
+# Should return user stories only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
-Attachment: [outputs/backlog_20260522_114018.md](/outputs/backlog_20260522_114018.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260522_114018.md](/outputs/openai/gpt-5.4-mini/backlog_20260522_114018.md)
 
 ```bash
+# Executes the whole workflow with the default prompt, generating only user stories, features and dev tasks that don't exist in the backlog
 python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
 ```
 
-Attachment: [outputs/backlog_20260522_114623.md](/outputs/backlog_20260522_114623.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260522_114623.md](/outputs/openai/gpt-5.4-mini/backlog_20260522_114623.md)
 
 ---
 
@@ -348,22 +351,25 @@ Attachment: [outputs/backlog_20260522_114623.md](/outputs/backlog_20260522_11462
 ---
 
 ```bash
+# Executes the whole workflow with the default prompt, i.e., "What would the development tasks for this product be?"
 python .\main.py --spec .\inputs\sample_requirements.txt
 ```
 
-Attachment: [outputs/backlog_20260519_094334.md](/outputs/backlog_20260519_094334.md)
+Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094334.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094334.md)
 
 ```bash
+# Should return user stories only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
-Attachment: [outputs/backlog_20260519_094742.md](/outputs/backlog_20260519_094742.md)
+Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094742.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094742.md)
 
 ```bash
+# Executes the whole workflow with the default prompt, generating only user stories, features and dev tasks that don't exist in the backlog
 python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
 ```
 
-Attachment: [outputs/backlog_20260519_101538.md](/outputs/backlog_20260519_101538.md)
+Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_101538.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_101538.md)
 
 ---
 
@@ -374,7 +380,7 @@ pytest tests/ -v
 ```
 
 Tests use `unittest.mock.patch` to replace all OpenAI API calls, so they run
-without a live API key. The key behavioural tests are:
+without a live API key. The key behavioral tests are:
 
 - `test_corrected_prompt_fed_back_not_original` - verifies Bug 1 is fixed
 - `test_routes_to_highest_similarity_agent` - verifies router logic
