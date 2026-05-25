@@ -29,7 +29,7 @@ Functional requirements agreed in this session
    - Multi-turn conversation: follow-up questions maintain context.
    - Response always includes a "Sources" section listing the documents used.
 
-3. Document summarisation
+3. Document summarization
    - Users can paste a document URL or upload a PDF.
    - The assistant produces a structured summary: key points, action items,
      open questions.

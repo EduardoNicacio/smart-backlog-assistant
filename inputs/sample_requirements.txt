@@ -13,8 +13,7 @@ customer and internal email across multiple inboxes.
 Core Capabilities
 -----------------
 1. Email Ingestion
-   - Connect to one or more mailboxes via IMAP/SMTP or Microsoft 365 / Google
-     Workspace APIs.
+   - Connect to one or more mailboxes via IMAP/SMTP or Microsoft 365 / Google Workspace APIs.
    - Ingest emails in real time or on a polling schedule.
    - Support attachments up to 25 MB.
 
@@ -25,8 +24,7 @@ Core Capabilities
    - Confidence score per classification; flag low-confidence emails for human review.
 
 3. Routing Rules
-   - Administrators can define rules based on: sender domain, keywords, category
-     label, time of day, and team availability.
+   - Administrators can define rules based on: sender domain, keywords, category label, time of day, and team availability.
    - Rules support priority ordering and fallback routes.
    - No-code rule builder UI for non-technical administrators.
 
