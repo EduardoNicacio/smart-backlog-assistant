@@ -161,23 +161,23 @@ RoutingAgent ──── cosine-similarity routing over step embeddings
 │   ├── backlog_loader   →  reads existing backlog JSON           │
 │   └── BacklogProcessor (src/processor.py)                       │
 │         ├── ActionPlanningAgent                                 │
-│         │     └── gpt-5.4-mini: extract steps from prompt        │
+│         │     └── gpt-5.4-mini: extract steps from prompt       │
 │         │                                                       │
 │         └── RoutingAgent                                        │
 │               │  text-embedding-3-small: cosine similarity      │
 │               │                                                 │
 │               ├── _pm_support → EvaluationAgent                 │
 │               │     ├── KnowledgeAugmentedPromptAgent (PM)      │
-│               │     │     gpt-5.4-mini: write user stories       │
-│               │     └── gpt-5.4-mini: evaluate + correct         │
+│               │     │     gpt-5.4-mini: write user stories      │
+│               │     └── gpt-5.4-mini: evaluate + correct        │
 │               │                                                 │
 │               ├── _prog_support → EvaluationAgent               │
 │               │     ├── KnowledgeAugmentedPromptAgent (Prog)    │
-│               │     └── gpt-5.4-mini: evaluate + correct         │
+│               │     └── gpt-5.4-mini: evaluate + correct        │
 │               │                                                 │
 │               └── _dev_support → EvaluationAgent                │
 │                     ├── KnowledgeAugmentedPromptAgent (Dev)     │
-│                     └── gpt-5.4-mini: evaluate + correct         │
+│                     └── gpt-5.4-mini: evaluate + correct        │
 │                                                                 │
 │   └── formatter  →  writes Markdown to outputs/                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -228,8 +228,7 @@ development tasks with Task ID/Title/Story/Description/AC/Effort/Dependencies.
 ### Golden prompt 2 - User stories only
 
 ```bash
-python main.py --spec inputs/sample_requirements.txt \
-               --prompt "What are the user stories for this product?"
+python main.py --spec inputs/sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
 **Expected output:** Only user stories section; RoutingAgent routes the
@@ -238,8 +237,7 @@ single step to the Product Manager agent.
 ### Golden prompt 3 - With existing backlog
 
 ```bash
-python main.py --spec inputs/sample_requirements.txt \
-               --backlog inputs/sample_backlog.json
+python main.py --spec inputs/sample_requirements.txt --backlog inputs/sample_backlog.json
 ```
 
 **Expected output:** Full workflow output; existing items from
@@ -275,7 +273,7 @@ Fixed by using role-semantic vocabulary.
 - Prompt iteration - gpt-5.4-mini outputs were manually reviewed across 5+
   runs; evaluation criteria were tightened based on failure modes observed.
 - Test case generation - Claude Sonnet helped draft the unit test structure
-  and identify the key behavioural assertions.
+  and identify the key behavioral assertions.
 
 ---
 
