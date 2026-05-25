@@ -300,5 +300,5 @@ See `requirements.txt`. Core dependencies:
 While Voyage AI is the preferred partner, developers commonly use a few different options for generating text embeddings to feed into Anthropic-powered retrieval-augmented generation (RAG) pipelines:
 
 - **Voyage AI**: Anthropic’s official partner. They offer state-of-the-art, customizable embeddings for general use, as well as domain-specific models for finance and healthcare.
-- **OpenAI**: Widely used and highly accessible (e.g., text-embedding-3-small or text-embedding-3-small).
+- **OpenAI**: Widely used and highly accessible (e.g., text-embedding-3-large or text-embedding-3-small).
 - **Cohere**: Another popular industry standard for high-quality semantic search.
