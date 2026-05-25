@@ -7,7 +7,7 @@ The Email Router Service is a cloud-based platform that automatically classifies
 prioritizes, and routes incoming emails to the correct team or individual based on
 content analysis, sender history, and configurable business rules.
 
-The system is designed for mid-to-large organisations that receive high volumes of
+The system is designed for mid-to-large organizations that receive high volumes of
 customer and internal email across multiple inboxes.
 
 Core Capabilities
@@ -19,7 +19,7 @@ Core Capabilities
    - Support attachments up to 25 MB.
 
 2. Classification Engine
-   - Analyse email subject, body, and metadata using NLP.
+   - analyze email subject, body, and metadata using NLP.
    - Assign one or more category labels (e.g. Billing, Support, Sales, HR).
    - Detect language and route accordingly.
    - Confidence score per classification; flag low-confidence emails for human review.
@@ -50,7 +50,7 @@ Non-Functional Requirements
 - Availability: 99.9 % uptime SLA.
 - Latency: emails routed within 5 seconds of ingestion.
 - Security: SOC 2 Type II compliant; data encrypted at rest and in transit.
-- Scalability: handle up to 50,000 emails per day per organisation.
+- Scalability: handle up to 50,000 emails per day per organization.
 
 Users
 -----
