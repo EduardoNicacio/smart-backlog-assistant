@@ -88,16 +88,16 @@ def _build_markdown(result: dict, title: str) -> str:
         lines.append("---")
         lines.append("")
 
-    # Per-step output
-    for i, (step, output) in enumerate(zip(steps, outputs), 1):
-        lines += [
-            f"## Step {step}: ",
-            "",
-            output.strip() if output else "_No output generated._",
-            "",
-            "---",
-            "",
-        ]
+    # Per-step output (removed)
+    # for i, (step, output) in enumerate(zip(steps, outputs), 1):
+    #     lines += [
+    #         f"## Step {step}: ",
+    #         "",
+    #         output.strip() if output else "_No output generated._",
+    #         "",
+    #         "---",
+    #         "",
+    #     ]
 
     # Final output highlight
     if final:

@@ -93,9 +93,12 @@ class BacklogProcessor:
         # ===================================================================
         knowledge_action_planning = (
             "A full development plan for a product is produced in three ordered steps:\n"
-            "1. Define user stories from the product specification - sentences in the form 'As a `persona`, I want `action` so that `outcome`'. Each story maps to one specific product functionality.\n"
-            "2. Define features by grouping related stories into named capabilities that describe what the product does at a higher level.\n"
-            "3. Define development tasks - for each user story, list the engineering work required: what must be built, acceptance criteria, effort, and dependencies.\n\n"
+            "1. Define user stories from the product specification in the form "
+            "'As a `persona`, I want `action` so that `outcome`.'\n"
+            "2. Define features by grouping related stories into named capabilities "
+            "that describe what the product does at a higher level.\n"
+            "3. Define development tasks for each user story, including what must be "
+            "built, acceptance criteria, effort, and dependencies.\n\n"  # <-- keep router signal clean
             "IMPORTANT: Extract ONLY the steps that are explicitly requested in the prompt. "
             "If the prompt asks only for user stories, return only step 1. "
             "If the prompt asks only for features, return only step 2. "
@@ -228,23 +231,43 @@ class BacklogProcessor:
         # DEVELOPMENT ENGINEER - knowledge agent
         # ===================================================================
         persona_dev_engineer = (
-            "You are a Development Engineer. Your sole responsibility is to define "
-            "engineering development tasks for each user story. You do not write "
-            "user stories or group features."
+            "You are a Development Engineer writing a sprint-ready engineering backlog. "
+            "Your sole responsibility is to produce structured task cards - one per engineering "
+            "concern - for each user story you are given. "
+            "You do not write user stories, group features, explain your reasoning, or add commentary. "
+            "If context is missing, infer reasonable assumptions silently and proceed. "
+            "Never output a refusal or a disclaimer - output task cards only."
         )
         knowledge_dev_engineer = (
-            "Development tasks are defined by identifying what must be built to "
-            "implement each user story.\n"
-            "Each task must include:\n"
-            "  Task ID            : A unique identifier (e.g. TASK-001)\n"
-            "  Task Title         : A brief description of the specific work\n"
-            "  Related User Story : Reference to the parent user story\n"
-            "  Description        : Detailed explanation of the technical work required\n"
-            "  Acceptance Criteria: Specific, testable requirements for completion\n"
-            "  Estimated Effort   : Time or complexity estimate (e.g. 2h, 3 story points)\n"
-            "  Dependencies       : Any tasks that must be completed first (or 'None')\n\n"
-            "Write at least one task per user story. Tasks should be small enough "
-            "to be completed in one sprint."
+            "A development task card documents one atomic unit of engineering work required "
+            "to implement a user story. Each card must contain exactly these fields:\n\n"
+            "  Task ID             : Sequential identifier in the format TASK-NNN (e.g. TASK-001)\n"
+            "  Task Title          : ≤10 words. Action verb + subject (e.g. 'Implement JWT login endpoint')\n"
+            "  Related User Story  : The full user story this task implements\n"
+            "  Description         : 2–4 sentences describing the technical work: what to build, "
+            "how it fits the story, and any key implementation detail\n"
+            "  Acceptance Criteria : 3–5 bullet points, each independently testable and starting "
+            "with a condition (e.g. '- Endpoint returns HTTP 201 when...')\n"
+            "  Estimated Effort    : Story points only, using the Fibonacci scale: 1, 2, 3, 5, or 8. "
+            "Tasks estimated at 8 points should be split if possible.\n"
+            "  Dependencies        : Comma-separated Task IDs that must complete first, or 'None'\n\n"
+            "Rules:\n"
+            "- Split front-end and back-end work into separate tasks.\n"
+            "- Split database schema changes into their own task.\n"
+            "- Each task must be completable within a single sprint.\n"
+            "- Tasks requiring 8+ points should be noted as candidates for splitting.\n"
+            "- End with a summary table: Task ID | Task Title | User Story | Effort | Dependencies\n\n"
+            "Output format - use this exact markdown structure for every card:\n\n"
+            "### TASK-NNN\n\n"
+            "| Field | Detail |\n"
+            "|---|---|\n"
+            "| **Task ID** | TASK-NNN |\n"
+            "| **Task Title** | ... |\n"
+            "| **Related User Story** | ... |\n"
+            "| **Description** | ... |\n"
+            "| **Acceptance Criteria** | - criterion one<br>- criterion two<br>- criterion three |\n"
+            "| **Estimated Effort** | N story points |\n"
+            "| **Dependencies** | TASK-NNN, TASK-NNN or None |\n"
         )
 
         self._dev_knowledge_agent = KnowledgeAugmentedPromptAgent(
@@ -321,10 +344,11 @@ class BacklogProcessor:
                 {
                     "name": "Development Engineer",
                     "description": (
-                        "Responsible for writing engineering development tasks, sprint tickets, "
-                        "and technical work items for each user story. Each task has a Task ID, "
-                        "Task Title, effort estimate in story points or hours, technical acceptance "
-                        "criteria, and dependencies. Does not write user stories or define features. "
+                        "Responsible for defining development tasks for each user story, "
+                        "including what must be built, acceptance criteria, effort, and dependencies. "
+                        "Each task has a Task ID, Task Title, effort in story points (Fibonacci scale), "
+                        "technical acceptance criteria, and a dependency list. "
+                        "Does not write user stories or define features. "
                         "Output is a structured list of implementation tasks ready for a sprint backlog."
                     ),
                     "func": self._dev_support,

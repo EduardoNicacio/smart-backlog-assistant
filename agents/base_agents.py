@@ -129,7 +129,7 @@ class KnowledgeAugmentedPromptAgent:
 class RAGKnowledgePromptAgent:
     """
     Uses Retrieval-Augmented Generation (RAG) to answer prompts from a large
-    knowledge corpus.  The corpus is chunked, embedded once (via
+    knowledge corpus.  The corpus is chuncked, embedded once (via
     ``build_knowledge``), then the most similar chunk is retrieved at query time.
     """
 
@@ -479,12 +479,15 @@ class ActionPlanningAgent:
 
     def extract_steps_from_prompt(self, prompt: str) -> list:
         system = (
-            "You are an action planning agent. Using your knowledge, "
-            "extract from the user prompt the ordered steps required to "
-            "complete the requested action. Return ONLY the steps as a "
-            "numbered list - one step per line. Do not include steps "
-            "that are not in your knowledge base. "
-            f"Forget any previous context.\n\nKnowledge:\n{self.knowledge}"
+            "You are an action planning agent. Your ONLY job is to return a numbered list of "
+            "ordered steps required to complete the user's request, grounded strictly in your knowledge base.\n\n"
+            "Rules:\n"
+            "- Return ONLY the numbered steps - one per line. No preamble, no refusals, no explanations.\n"
+            "- If a prerequisite step is needed (e.g. a product spec must exist before stories can be written), "
+            "include it as step 1 with the instruction: 'Request the product specification from the user.'\n"
+            "- Do not include any step that is not in your knowledge base.\n"
+            "- Do not output anything other than the numbered list.\n\n"
+            f"Knowledge:\n{self.knowledge}"
         )
         try:
             text = self.client.complete(

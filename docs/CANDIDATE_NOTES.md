@@ -328,21 +328,21 @@ Three prompts were used to validate the end-to-end workflow:
 python .\main.py --spec .\inputs\sample_requirements.txt
 ```
 
-Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260522_113715.md](/outputs/openai/gpt-5.4-mini/backlog_20260522_113715.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260525_090343.md](/outputs/openai/gpt-5.4-mini/backlog_20260525_090343.md)
 
 ```bash
 # Should return user stories only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
-Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260522_114018.md](/outputs/openai/gpt-5.4-mini/backlog_20260522_114018.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260525_092941.md](/outputs/openai/gpt-5.4-mini/backlog_20260525_092941.md)
 
 ```bash
-# Executes the whole workflow with the default prompt, generating only user stories, features and dev tasks that don't exist in the backlog
+# Executes the whole workflow with the default prompt, generating only the engineering/dev tasks that don't exist in the backlog
 python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
 ```
 
-Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260522_114623.md](/outputs/openai/gpt-5.4-mini/backlog_20260522_114623.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260525_093813.md](/outputs/openai/gpt-5.4-mini/backlog_20260525_093813.md)
 
 ---
 
@@ -365,7 +365,7 @@ python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the 
 Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094742.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094742.md)
 
 ```bash
-# Executes the whole workflow with the default prompt, generating only user stories, features and dev tasks that don't exist in the backlog
+# Executes the whole workflow with the default prompt, generating only the engineering/dev tasks that don't exist in the backlog
 python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
 ```
 
