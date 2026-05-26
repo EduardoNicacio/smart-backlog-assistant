@@ -57,7 +57,7 @@ def load_document(path: str) -> str:
     elif ext == ".pdf":
         return _load_pdf(p)
     else:
-        raise ValueError(f"Unsupported document format '{ext}'. Supported: .txt, .pdf")
+        raise ValueError(f"Unsupported document format '{ext}'. Supported: .txt, .md, .pdf")
 
 # ---------------------------------------------------------------------------
 # Load _txt_ and _md_ helper

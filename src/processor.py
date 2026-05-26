@@ -157,10 +157,10 @@ class BacklogProcessor:
             "this exact structure:\n"
             "  As a [type of user], I want [an action or feature] so that [benefit/value].\n\n"
             "Each story must be:\n"
-            "  - Clear and concise\n"
-            "  - Focused on a single, specific user need\n"
-            "  - Free of technical implementation details\n"
-            "  - Written from the user's perspective, not the system's"
+            "- Clear and concise\n"
+            "- Focused on a single, specific user need\n"
+            "- Free of technical implementation details\n"
+            "- Written from the user's perspective, not the system's"
         )
 
         self._pm_eval_agent = EvaluationAgent(
@@ -187,10 +187,10 @@ class BacklogProcessor:
             "Product features are defined by organizing related user stories into "
             "cohesive, named groups.\n"
             "Each feature must include:\n"
-            "  Feature Name      : A clear, concise title that identifies the capability\n"
-            "  Description       : What the feature does and its purpose\n"
-            "  Key Functionality : The specific capabilities the feature provides\n"
-            "  User Benefit      : How this feature creates value for the user\n\n"
+            "-  Feature Name      : A clear, concise title that identifies the capability\n"
+            "-  Description       : What the feature does and its purpose\n"
+            "-  Key Functionality : The specific capabilities the feature provides\n"
+            "-  User Benefit      : How this feature creates value for the user\n\n"
             "Group stories by the common outcome or persona they serve.\n"
             "A feature should contain at least two related stories."
         )
@@ -207,11 +207,11 @@ class BacklogProcessor:
         criteria_prog = (
             "The answer should consist of product features that each follow "
             "this exact structure:\n"
-            "  Feature Name      : A clear, concise title that identifies the capability\n"
-            "  Description       : A brief explanation of what the feature does and its purpose\n"
-            "  Key Functionality : The specific capabilities or actions the feature provides\n"
-            "  User Benefit      : How this feature creates value for the user\n\n"
-            "Each feature must group at least two related user stories. "
+            "-  Feature Name      : A clear, concise title that identifies the capability\n"
+            "-  Description       : A brief explanation of what the feature does and its purpose\n"
+            "-  Key Functionality : The specific capabilities or actions the feature provides\n"
+            "-  User Benefit      : How this feature creates value for the user\n\n"
+            "Each feature must group at least two related user stories. \n"
             "Features must not contain individual task-level implementation details."
         )
 
@@ -241,26 +241,33 @@ class BacklogProcessor:
         knowledge_dev_engineer = (
             "A development task card documents one atomic unit of engineering work required "
             "to implement a user story. Each card must contain exactly these fields:\n\n"
-            "  Task ID             : Sequential identifier in the format TASK-NNN (e.g. TASK-001)\n"
-            "  Task Title          : ≤10 words. Action verb + subject (e.g. 'Implement JWT login endpoint')\n"
-            "  Related User Story  : The full user story this task implements\n"
-            "  Description         : 2–4 sentences describing the technical work: what to build, "
+            "-  Task ID             : Sequential identifier in the format TASK-NNN (e.g. TASK-001)\n"
+            "-  Task Title          : ≤10 words. Action verb + subject (e.g. 'Implement JWT login endpoint')\n"
+            "-  Related User Story  : The full user story this task implements\n"
+            "-  Description         : 2–4 sentences describing the technical work: what to build, "
             "how it fits the story, and any key implementation detail\n"
-            "  Acceptance Criteria : 3–5 bullet points, each independently testable and starting "
+            "-  Acceptance Criteria : 3–5 bullet points, each independently testable and starting "
             "with a condition (e.g. '- Endpoint returns HTTP 201 when...')\n"
-            "  Estimated Effort    : Story points only, using the Fibonacci scale: 1, 2, 3, 5, or 8. "
+            "-  Estimated Effort    : Story points only, using the Fibonacci scale: 1, 2, 3, 5, or 8. "
             "Tasks estimated at 8 points should be split if possible.\n"
-            "  Dependencies        : Comma-separated Task IDs that must complete first, or 'None'\n\n"
+            "-  Dependencies        : Comma-separated Task IDs that must complete first, or 'None'\n\n"
             "Rules:\n"
             "- Split front-end and back-end work into separate tasks.\n"
             "- Split database schema changes into their own task.\n"
             "- Each task must be completable within a single sprint.\n"
             "- Tasks requiring 8+ points should be noted as candidates for splitting.\n"
+            "- If multiple user stories require the same technical implementation \n"
+            "  (e.g. adding values to a shared registry or enum), combine them into \n"
+            "  one task and list all related stories in the Related User Story field.\n"
+            "- Every feature that an administrator or manager interacts with directly \n"
+            "  requires both a backend task and a separate frontend UI task. \n"
+            "  Do not create a backend task without a corresponding UI task unless the \n"
+            "  feature is purely infrastructure or has no user-facing component.\n"
             "- End with a summary table: Task ID | Task Title | User Story | Effort | Dependencies\n\n"
             "Output format - use this exact markdown structure for every card:\n\n"
             "### TASK-NNN\n\n"
             "| Field | Detail |\n"
-            "|---|---|\n"
+            "| :--- | :--- |\n"
             "| **Task ID** | TASK-NNN |\n"
             "| **Task Title** | ... |\n"
             "| **Related User Story** | ... |\n"
@@ -282,17 +289,17 @@ class BacklogProcessor:
         criteria_dev = (
             "The answer should consist of development tasks that each follow "
             "this exact structure:\n"
-            "  Task ID            : A unique identifier for tracking purposes\n"
-            "  Task Title         : Brief description of the specific development work\n"
-            "  Related User Story : Reference to the parent user story\n"
-            "  Description        : Detailed explanation of the technical work required\n"
-            "  Acceptance Criteria: Specific requirements that must be met for completion\n"
-            "  Estimated Effort   : Time and/or complexity estimation\n"
-            "  Dependencies       : Any tasks that must be completed first\n\n"
-            "Every user story referenced in the input must have at least one task. "
-            "Acceptance criteria must be specific and testable with measurable conditions "
-            "(e.g. 'emails are routed within 5 seconds', 'returns HTTP 400 when input is invalid'). "
-            "Vague criteria such as 'works correctly' or 'is displayed accurately' are not acceptable.\n"
+            "-  Task ID            : A unique identifier for tracking purposes\n"
+            "-  Task Title         : Brief description of the specific development work\n"
+            "-  Related User Story : Reference to the parent user story\n"
+            "-  Description        : Detailed explanation of the technical work required\n"
+            "-  Acceptance Criteria: Specific requirements that must be met for completion\n"
+            "-  Estimated Effort   : Time and/or complexity estimation\n"
+            "-  Dependencies       : Any tasks that must be completed first\n\n"
+            "Every user story referenced in the input must have at least one task. \n"
+            "Acceptance criteria must be specific and testable with measurable conditions \n"
+            "(e.g. 'emails are routed within 5 seconds', 'returns HTTP 400 when input is invalid'). \n"
+            "Vague criteria such as 'works correctly' or 'is displayed accurately' are not acceptable."
         )
 
         self._dev_eval_agent = EvaluationAgent(
@@ -443,27 +450,43 @@ class BacklogProcessor:
 
         print(f"Steps extracted ({len(workflow_steps)}):")
         for i, s in enumerate(workflow_steps, 1):
-            print(f"  {i}. {s}")
+            print(f"{s}")
 
         completed_outputs = []
-        accumulated_context = ""
+        context_sections = []
+
+        # Anchor the spec as the first named context section
+        if self.product_spec:
+            context_sections.append(f"Product specification:\n{self.product_spec}")
 
         for step in workflow_steps:
             print(f"\n--- Executing step: {step} ---")
+
+            # Build structured context from everything gathered so far
+            accumulated_context = "\n\n".join(context_sections)
+
             try:
-                # Inject all previous step outputs as context
-                query = f"{step}\n\n{accumulated_context}".strip() if accumulated_context else step
-                result = self.routing_agent.route(query)
+                result = self.routing_agent.route(
+                    user_input=step,
+                    context=accumulated_context,
+                )
             except Exception:
                 logger.exception("Routing failed for step: %s", step)
                 result = f"[ERROR] Routing failed for step: {step}"
 
             completed_outputs.append(result)
-            # Append this step's output to the running context for subsequent steps
-            accumulated_context += f"\nOutput from previous step:\n{result}\n"
+
+            # Label each section so downstream steps have clear grounding
+            step_label = step.split(".")[0].strip() if "." in step else step[:80]
+            context_sections.append(f"Output from step '{step_label}':\n{result}")
+
             print(f"Step output (truncated):\n{result[:400]}...\n")
 
-        final_output = completed_outputs[-1] if completed_outputs else ""
+        # Take the last successful result, not just the last result
+        final_output = next(
+            (r for r in reversed(completed_outputs) if not r.startswith("[ERROR]")),
+            completed_outputs[-1] if completed_outputs else "",
+        )
 
         print(f"\n{'='*80}")
         print("Workflow complete.")

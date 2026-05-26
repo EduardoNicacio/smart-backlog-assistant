@@ -9,7 +9,7 @@ Usage
     python main.py --spec inputs/sample_requirements.txt
 
     # Anthropic Claude:
-    AI_PROVIDER=anthropic python main.py --spec inputs/sample_requirements.txt
+    python main.py --spec inputs/sample_requirements.txt --provider anthropic
 
     # Or set AI_PROVIDER in your .env file and run normally.
 

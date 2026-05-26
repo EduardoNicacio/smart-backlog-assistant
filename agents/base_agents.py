@@ -482,13 +482,19 @@ class ActionPlanningAgent:
             "You are an action planning agent. Your ONLY job is to return a numbered list of "
             "ordered steps required to complete the user's request, grounded strictly in your knowledge base.\n\n"
             "Rules:\n"
-            "- Return ONLY the numbered steps - one per line. No preamble, no refusals, no explanations.\n"
-            "- If a prerequisite step is needed (e.g. a product spec must exist before stories can be written), "
-            "include it as step 1 with the instruction: 'Request the product specification from the user.'\n"
+            "- Return ONLY the numbered steps — one per line. No preamble, no refusals, no explanations.\n"
+            "- Do not output anything other than the numbered list.\n"
             "- Do not include any step that is not in your knowledge base.\n"
-            "- Do not output anything other than the numbered list.\n\n"
+            "- If the user message contains a product specification (look for a 'Product specification:' "
+            "section or equivalent structured content describing a product), skip directly to the first "
+            "substantive step. Do NOT include a step to request the specification.\n"
+            "- If and only if the user message contains NO product specification and one is required "
+            "to complete the request, include as step 1: "
+            "'Request the product specification from the user.' "
+            "Do not include any further steps in that case.\n\n"
             f"Knowledge:\n{self.knowledge}"
         )
+        
         try:
             text = self.client.complete(
                 messages=[{"role": "user", "content": prompt}],
