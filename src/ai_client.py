@@ -62,6 +62,8 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL")
 ANTHROPIC_BASE_MODEL = os.getenv("ANTHROPIC_BASE_MODEL")
 
+MAX_TOKENS=16384
+
 # ---------------------------------------------------------------------------
 # AIClient
 # ---------------------------------------------------------------------------
@@ -215,6 +217,7 @@ class AIClient:
             model=str(self.chat_model),
             messages=full_messages,
             temperature=0,
+            max_completion_tokens=MAX_TOKENS,
         )
         return response.choices[0].message.content or ""
 
@@ -222,7 +225,7 @@ class AIClient:
         # Anthropic's API takes system as a top-level param, not a message role
         kwargs = dict(
             model=self.chat_model,
-            max_tokens=16384,
+            max_tokens=MAX_TOKENS,
             messages=messages,
         )
         if system:

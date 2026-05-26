@@ -324,25 +324,25 @@ Three prompts were used to validate the end-to-end workflow:
 ---
 
 ```bash
-# Executes the whole workflow with the default prompt, i.e., "What would the development tasks for this product be?"
+# Executes the whole workflow with the default prompt, i.e., "What would the development tasks for this product be?", and produce only the dev tasks
 python .\main.py --spec .\inputs\sample_requirements.txt
 ```
 
-Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260525_090343.md](/outputs/openai/gpt-5.4-mini/backlog_20260525_090343.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260526_110334.md](/outputs/openai/gpt-5.4-mini/backlog_20260526_110334.md)
 
 ```bash
 # Should return user stories only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
-Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260525_092941.md](/outputs/openai/gpt-5.4-mini/backlog_20260525_092941.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260526_110611.md](/outputs/openai/gpt-5.4-mini/backlog_20260526_110611.md)
 
 ```bash
-# Executes the whole workflow with the default prompt, generating only the engineering/dev tasks that don't exist in the backlog
+# Executes the whole workflow with the default prompt, generating only the tasks that don't exist in the backlog
 python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
 ```
 
-Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260525_093813.md](/outputs/openai/gpt-5.4-mini/backlog_20260525_093813.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260526_111005.md](/outputs/openai/gpt-5.4-mini/backlog_20260526_111005.md)
 
 ---
 

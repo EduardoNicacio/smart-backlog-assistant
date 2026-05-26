@@ -43,3 +43,6 @@ logs/
 # Google ADK
 .adk/
 */.adk/
+
+# Linter config files
+.markdownlint.json
