@@ -61,10 +61,10 @@ class BacklogProcessor:
         Configured AI client from ``src.ai_client.build_client()``.
     max_eval_iterations : int
         Maximum correction loops the EvaluationAgent may run per step.
-        Default 3 keeps costs reasonable while allowing meaningful refinement.
+        Default 5 keeps costs reasonable while allowing meaningful refinement.
     """
 
-    def __init__(self, product_spec: str, client, max_eval_iterations: int = 3):
+    def __init__(self, product_spec: str, client, max_eval_iterations: int = 5):
         self.product_spec = product_spec
         self.client = client
         self.max_eval_iterations = max_eval_iterations
