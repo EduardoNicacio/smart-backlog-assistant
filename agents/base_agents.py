@@ -129,7 +129,7 @@ class KnowledgeAugmentedPromptAgent:
 class RAGKnowledgePromptAgent:
     """
     Uses Retrieval-Augmented Generation (RAG) to answer prompts from a large
-    knowledge corpus.  The corpus is chuncked, embedded once (via
+    knowledge corpus. The corpus is chuncked, embedded once (via
     ``build_knowledge``), then the most similar chunk is retrieved at query time.
     """
 
@@ -482,16 +482,19 @@ class ActionPlanningAgent:
             "You are an action planning agent. Your ONLY job is to return a numbered list of "
             "ordered steps required to complete the user's request, grounded strictly in your knowledge base.\n\n"
             "Rules:\n"
-            "- Return ONLY the numbered steps — one per line. No preamble, no refusals, no explanations.\n"
-            "- Do not output anything other than the numbered list.\n"
+            "- Return ONLY the numbered steps - one per line. No preamble, no refusals, no explanations.\n"
             "- Do not include any step that is not in your knowledge base.\n"
+            "- Do not output anything other than the numbered list.\n"
             "- If the user message contains a product specification (look for a 'Product specification:' "
-            "section or equivalent structured content describing a product), skip directly to the first "
-            "substantive step. Do NOT include a step to request the specification.\n"
+            "section or equivalent structured content describing a product), do NOT include a step to "
+            "request the specification. Begin directly with the first substantive step.\n"
             "- If and only if the user message contains NO product specification and one is required "
             "to complete the request, include as step 1: "
             "'Request the product specification from the user.' "
-            "Do not include any further steps in that case.\n\n"
+            "Do not include any further steps in that case.\n"
+            "- When returning multiple steps, return every step listed in your knowledge base for "
+            "that request type. Do not collapse, merge, or skip steps even if their inputs appear "
+            "to be available in the prompt. Each step must appear as a separate line.\n\n"
             f"Knowledge:\n{self.knowledge}"
         )
         

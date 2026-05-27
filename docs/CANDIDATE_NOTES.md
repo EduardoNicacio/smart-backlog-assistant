@@ -113,15 +113,25 @@ is explained below.
 
 ### 3.1 ActionPlanningAgent - knowledge string
 
-```txt
-"A full development plan for a product is produced in three ordered steps:"
-"1. Define user stories from the product specification - ..."
-"2. Define features by grouping related stories into ..."
-"3. Define development tasks - for each user story, list..."
-"IMPORTANT: Extract ONLY the steps that are explicitly requested in the prompt. "
-"If the prompt asks only for user stories, return only step 1. "
-"If the prompt asks only for features, return only step 2. "
-"If the prompt asks for development tasks or a full plan, return all three steps in order."
+```python
+knowledge_action_planning = (
+   "A full development plan for a product is produced in three ordered steps:\n"
+   "1. Define user stories from the product specification in the form "
+   "'As a `persona`, I want `action` so that `outcome`.'\n"
+   "2. Define features by grouping related stories into named capabilities "
+   "that describe what the product does at a higher level.\n"
+   "3. Define development tasks for each user story, including what must be "
+   "built, acceptance criteria, effort, and dependencies.\n\n"
+   "IMPORTANT: Extract ONLY the steps that are explicitly requested in the prompt.\n"
+   "- If the prompt asks only for user stories, return only step 1.\n"
+   "- If the prompt asks only for features, return only step 2.\n"
+   "- If the prompt asks for development tasks or a full plan, return steps 1, 2, "
+   "and 3 in order - always include all three steps even if user stories or features "
+   "could be inferred from the product specification. Each step must be executed "
+   "explicitly; do not collapse or skip steps.\n"
+   "- Never infer that a step has already been completed. If the prompt requests "
+   "a full plan or development tasks, all three steps must appear in the output."
+)
 ```
 
 **Why**: Explicitly naming the three deliverables and their order constrains
@@ -151,7 +161,7 @@ persona_product_manager = (
 ```
 
 **Why**: Without the negative constraint ("You **do not**..."), the PM agent often generated a mix of stories AND features in a
-single response, which then failed the evaluation criteria.  Explicit
+single response, which then failed the evaluation criteria. Explicit
 exclusions proved more reliable than relying on the evaluation loop to
 correct mixed output.
 
@@ -163,9 +173,13 @@ The product spec is embedded in the PM agent's knowledge string:
 knowledge_product_manager = (
    "User stories are defined by writing sentences that describe a persona, "
    "an action, and a desired outcome.\n"
-   "Every story MUST start with: 'As a'\n"
-   "Write stories that cover all the personas who interact with this product.\n"
-   "Each story should represent one specific piece of functionality.\n\n"
+   "Every story MUST start with: 'As a'...\n"
+   "Write ONE story per product functionality - do not combine multiple "
+   "functionalities into a single story.\n"
+   "Cover ALL personas and ALL capabilities mentioned in the specification. "
+   "Do not omit features. If the spec mentions multiple variants of a "
+   "capability (e.g. IMAP/SMTP AND Microsoft 365 AND Google Workspace), "
+   "write a separate story for each.\n\n"
    f"Product specification:\n{spec}"
 )
 ```
@@ -186,13 +200,14 @@ Criteria are written as checklists, not prose:
 
 ```python
 criteria_pm = (
-   "The answer should consist exclusively of user stories that follow this exact structure:\n"
+   "The answer should consist exclusively of user stories that follow "
+   "this exact structure:\n"
    "  As a [type of user], I want [an action or feature] so that [benefit/value].\n\n"
    "Each story must be:\n"
-   "  - Clear and concise\n"
-   "  - Focused on a single, specific user need\n"
-   "  - Free of technical implementation details\n"
-   "  - Written from the user's perspective, not the system's"
+   "- Clear and concise\n"
+   "- Focused on a single, specific user need\n"
+   "- Free of technical implementation details\n"
+   "- Written from the user's perspective, not the system's"
 )
 ```
 
@@ -257,10 +272,10 @@ response_from_worker = self.worker_agent.respond(input_text=initial_prompt)
 response_from_worker = self.worker_agent.respond(input_text=prompt_to_evaluate)
 # ...
 prompt_to_evaluate = (
-      f"Your task is:\n{initial_prompt}\n\n"
-      f"Your previous attempt was:\n{response_from_worker}\n\n"
-      f"Rewrite your answer applying ONLY these corrections:\n{instructions}\n\n"
-      f"Return ONLY the corrected content. Do not evaluate, explain, or repeat these instructions."
+   f"Your task is:\n{initial_prompt}\n\n"
+   f"Your previous attempt was:\n{response_from_worker}\n\n"
+   f"Rewrite your answer applying ONLY these corrections:\n{instructions}\n\n"
+   f"Return ONLY the corrected content. Do not evaluate, explain, or repeat these instructions."
 )
 ```
 
