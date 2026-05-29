@@ -3,7 +3,7 @@
 ```md
 ## RDE Certification - Capstone Project Documentation
 ## Candidate: Eduardo Nicacio [eduardo.nicacio@accenture.com]
-## Date: May 19th, 2026
+## Date: May 28th, 2026
 ```
 
 ## 1. Problem Definition
@@ -324,7 +324,7 @@ Three prompts were used to validate the end-to-end workflow:
 
 | # | Prompt | Expected routing | Expected output shape |
 | :--- | :--- | :--- | :--- |
-| 1 | `"What would the development tasks for this product be?"` | PM → ProgMgr → DevEng | All three artifact types |
+| 1 | `"What would the development tasks for this product be?"` | PM → ProgMgr → DevEng | Dev tasks |
 | 2 | `"What are the user stories for this product?"` | PM only | Connextra-format stories |
 | 3 | `"What features should this product have?"` | ProgMgr only | Feature cards with 4 fields |
 
@@ -334,59 +334,95 @@ Three prompts were used to validate the end-to-end workflow:
 
 ---
 
-#### Model: Open AI gpt-5.4-mini
+#### Model: Open AI gpt-5.4-mini - sample outputs
 
 ---
 
 ```bash
 # Executes the whole workflow with the default prompt, i.e., "What would the development tasks for this product be?", and produce only the dev tasks
-python .\main.py --spec .\inputs\sample_requirements.txt
+python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What would the development tasks for this product be?"
 ```
 
 Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260526_110334.md](/outputs/openai/gpt-5.4-mini/backlog_20260526_110334.md)
 
 ```bash
-# Should return user stories only
+# Should return Connextra-format user stories only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
 Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260526_110611.md](/outputs/openai/gpt-5.4-mini/backlog_20260526_110611.md)
 
 ```bash
-# Executes the whole workflow with the default prompt, generating only the tasks that don't exist in the backlog
-python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
+# Should return feature cards with 4 fields only
+python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What features should this product have?"
 ```
 
 Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260526_111005.md](/outputs/openai/gpt-5.4-mini/backlog_20260526_111005.md)
 
 ---
 
-#### Model: Anthropic claude-sonnet-4-6
+#### Model: Anthropic claude-sonnet-4-6 - sample outputs
 
 ---
 
 ```bash
-# Executes the whole workflow with the default prompt, i.e., "What would the development tasks for this product be?"
-python .\main.py --spec .\inputs\sample_requirements.txt
+# Executes the whole workflow with the default prompt, i.e., "What would the development tasks for this product be?", and produce only the dev tasks
+python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What would the development tasks for this product be?"
 ```
 
 Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094334.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094334.md)
 
 ```bash
-# Should return user stories only
+# Should return Connextra-format user stories only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
 Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094742.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094742.md)
 
 ```bash
-# Executes the whole workflow with the default prompt, generating only the engineering/dev tasks that don't exist in the backlog
-python .\main.py --spec .\inputs\sample_requirements.txt --backlog .\inputs\sample_backlog.json
+# Should return feature cards with 4 fields only
+python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What features should this product have?"
 ```
 
 Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_101538.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_101538.md)
 
 ---
+
+## LLM as a Judge
+
+Here's what it came out after analyzing both python scripts - `` and `` -, the sample requirements, and the output from both OpenAI gpt-5.4-mini and Anthropic Claude Sonnet 4.6:
+
+### OpenAI gpt-5.4-mini output
+
+```md
+This is the best run across the entire session — and it's a significant step up from the previous one. 41 tasks, a healthy effort spread across the full Fibonacci scale (1, 2, 3, 5, 8), all four NFRs present, every 8-point task correctly flagged with a split suggestion, no missing Task ID fields, the summary table contains full user story text throughout, and TASK-019 is the only minor exception (missing Task ID in the card body, still present in the summary). The dependency graph is also the most architecturally accurate yet.
+
+A few specific observations worth noting:
+
+**What's meaningfully better than all previous runs**
+
+The schema → API → UI layering (TASK-001/002/003, TASK-010/011/012, TASK-013/014/015) is a direct result of the "split schema into its own task" rule finally being applied consistently. Previous runs collapsed schema work into the backend task. The effort spread is now genuinely Fibonacci-calibrated — 2-point tasks for low-complexity flagging (TASK-009), 3-point tasks for schema and simple UI, 5-point tasks for mid-complexity backends, 8-point tasks for engines and pipelines. TASK-010 being 5 points (not 3) correctly reflects that a routing rules schema spanning five condition types is more complex than a simple SLA targets schema. That distinction wasn't present before.
+
+**TASK-019 — the only remaining Task ID omission**
+
+The card body is missing the `Task ID` row, though the summary table is correct. This is the one residual instance of the field-omission pattern from previous runs. The guard rule is working for all other 40 tasks, so this appears to be a single model slip rather than a systemic gap. At this point it may not be worth adding further prompt complexity to eliminate a single-occurrence edge case.
+
+**TASK-032 dependency worth reviewing**
+
+TASK-032 (Microsoft Teams connector) lists TASK-017 (messaging connector) as a dependency. But TASK-017 *is* the shared messaging connector that covers both Slack and email delivery — TASK-032 appears to be a separate, dedicated Teams connector built on top of it. If TASK-017 already handles Teams, TASK-032 is redundant. If TASK-032 is a Teams-specific extension, then depending on TASK-017 makes sense, but the description of TASK-017 ("shared messaging connector layer") suggests it should already include Teams. This is an architectural ambiguity worth clarifying in the spec or collapsing TASK-032 into TASK-017 with a split note.
+
+**One new pattern worth keeping — role-specific inbox UIs**
+
+TASK-039 (support agent inbox) and TASK-040 (sales representative inbox) are new in this run and weren't generated in any previous output. They come directly from the Customer Support Agent and Sales Representative personas in the spec, which the model had previously folded into the routing tasks. This is the correct behaviour — those are distinct user-facing deliverables. The model is now extracting all five persona types from the spec correctly.
+
+**Total: 41 tasks, 188 story points.** This is a **production-quality** sprint backlog for the spec provided.
+```
+
+### Anthropic Claude Sonnet 4.6 output
+
+```md
+
+```
 
 ### Running the tests
 
