@@ -3,7 +3,7 @@
 ```md
 ## RDE Certification - Capstone Project Documentation
 ## Candidate: Eduardo Nicacio [eduardo.nicacio@accenture.com]
-## Date: May 28th, 2026
+## Date: May 29th, 2026
 ```
 
 ## 1. Problem Definition
@@ -186,15 +186,31 @@ knowledge_product_manager = (
 
 **Why**: Injecting the spec directly into the knowledge string (rather than
 the user prompt) ensures it is always present in the system message, not the
-user turn. The model respects system-level knowledge more consistently than
+user turn. The models appear to respect system-level knowledge more consistently than
 user-turn content for grounding purposes.
 
-**The Program Manager and Dev Engineer agents do NOT receive the spec**
-because they operate downstream of the PM output. Their inputs are the
-step text (which references the stories/features already generated), so
-re-injecting the spec would cause redundancy and potential contradiction.
+### 3.4 KnowledgeAugmentedPromptAgent - Dev Engineer knowledge string
 
-### 3.4 EvaluationAgent - criteria strings
+The dev engineer knowledge string went through the most iteration of any agent.
+Key decisions:
+
+- **Output format template**: A literal markdown table template at the bottom of the
+  knowledge string was the single highest-impact change. Both models mirror it
+  faithfully; without it, gpt-5.4-mini produced feature summaries and Claude
+  produced inconsistently structured cards.
+
+- **Fibonacci calibration with examples**: Specifying "not all backend tasks are
+  equivalent" with concrete examples (rule evaluation engine → 8pts, simple CRUD → 3pts)
+  eliminated the all-5s compression seen in early runs.
+
+- **Schema split rule**: Explicitly requiring database schema changes as their own task
+  produced the schema → API → UI layering that makes the final backlog sprint-ready.
+
+- **Dependency direction rule**: Two separate rules were required - a general connector
+  dependency rule and a specific SLA escalation rule - because the model consistently
+  inverted the Slack/SLA dependency without the explicit override.
+
+### 3.5 EvaluationAgent - criteria strings
 
 Criteria are written as checklists, not prose:
 
@@ -217,7 +233,7 @@ Yes/No assessment unambiguous. Prose criteria produced vague evaluations
 like "Mostly yes, but..." which the `evaluation.lower().startswith("yes")`
 check failed to parse correctly.
 
-### 3.5 RoutingAgent - description strings
+### 3.6 RoutingAgent - description strings
 
 ```python
 ...
@@ -390,38 +406,38 @@ Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_101538.md](/ou
 
 ## LLM as a Judge
 
-Here's what it came out after analyzing both python scripts - `` and `` -, the sample requirements, and the output from both OpenAI gpt-5.4-mini and Anthropic Claude Sonnet 4.6:
+Once I've got everything working the way I wanted, I then decided to have Claude Sonnet 4.6 as a judge of the outputs from the models I've interacted with the most: OpenAI Gpt 5.4 mini and Anthropic Claude Sonnet 4.6 itself. Here's what it came out after analyzing the main python scripts - `agents/base_agents.py` and `src/processor.py` -, the sample requirements - `input/sample_requirements.txt`-, and the output from both models (check the `outputs` folder for them):
 
-### OpenAI gpt-5.4-mini output
+### OpenAI gpt-5.4-mini output - [latest deliverable](/outputs/openai/gpt-5.4-mini/backlog_20260526_110334.md)
 
 ```md
-This is the best run across the entire session — and it's a significant step up from the previous one. 41 tasks, a healthy effort spread across the full Fibonacci scale (1, 2, 3, 5, 8), all four NFRs present, every 8-point task correctly flagged with a split suggestion, no missing Task ID fields, the summary table contains full user story text throughout, and TASK-019 is the only minor exception (missing Task ID in the card body, still present in the summary). The dependency graph is also the most architecturally accurate yet.
+This is the best run across the entire session - and it's a significant step up from the previous one. 41 tasks, a healthy effort spread across the full Fibonacci scale (1, 2, 3, 5, 8), all four NFRs present, every 8-point task correctly flagged with a split suggestion, no missing Task ID fields, the summary table contains full user story text throughout, and TASK-019 is the only minor exception (missing Task ID in the card body, still present in the summary). The dependency graph is also the most architecturally accurate yet.
 
 A few specific observations worth noting:
 
 **What's meaningfully better than all previous runs**
 
-The schema → API → UI layering (TASK-001/002/003, TASK-010/011/012, TASK-013/014/015) is a direct result of the "split schema into its own task" rule finally being applied consistently. Previous runs collapsed schema work into the backend task. The effort spread is now genuinely Fibonacci-calibrated — 2-point tasks for low-complexity flagging (TASK-009), 3-point tasks for schema and simple UI, 5-point tasks for mid-complexity backends, 8-point tasks for engines and pipelines. TASK-010 being 5 points (not 3) correctly reflects that a routing rules schema spanning five condition types is more complex than a simple SLA targets schema. That distinction wasn't present before.
+The schema → API → UI layering (TASK-001/002/003, TASK-010/011/012, TASK-013/014/015) is a direct result of the "split schema into its own task" rule finally being applied consistently. Previous runs collapsed schema work into the backend task. The effort spread is now genuinely Fibonacci-calibrated - 2-point tasks for low-complexity flagging (TASK-009), 3-point tasks for schema and simple UI, 5-point tasks for mid-complexity backends, 8-point tasks for engines and pipelines. TASK-010 being 5 points (not 3) correctly reflects that a routing rules schema spanning five condition types is more complex than a simple SLA targets schema. That distinction wasn't present before.
 
-**TASK-019 — the only remaining Task ID omission**
+**TASK-019 - the only remaining Task ID omission**
 
 The card body is missing the `Task ID` row, though the summary table is correct. This is the one residual instance of the field-omission pattern from previous runs. The guard rule is working for all other 40 tasks, so this appears to be a single model slip rather than a systemic gap. At this point it may not be worth adding further prompt complexity to eliminate a single-occurrence edge case.
 
 **TASK-032 dependency worth reviewing**
 
-TASK-032 (Microsoft Teams connector) lists TASK-017 (messaging connector) as a dependency. But TASK-017 *is* the shared messaging connector that covers both Slack and email delivery — TASK-032 appears to be a separate, dedicated Teams connector built on top of it. If TASK-017 already handles Teams, TASK-032 is redundant. If TASK-032 is a Teams-specific extension, then depending on TASK-017 makes sense, but the description of TASK-017 ("shared messaging connector layer") suggests it should already include Teams. This is an architectural ambiguity worth clarifying in the spec or collapsing TASK-032 into TASK-017 with a split note.
+TASK-032 (Microsoft Teams connector) lists TASK-017 (messaging connector) as a dependency. But TASK-017 *is* the shared messaging connector that covers both Slack and email delivery - TASK-032 appears to be a separate, dedicated Teams connector built on top of it. If TASK-017 already handles Teams, TASK-032 is redundant. If TASK-032 is a Teams-specific extension, then depending on TASK-017 makes sense, but the description of TASK-017 ("shared messaging connector layer") suggests it should already include Teams. This is an architectural ambiguity worth clarifying in the spec or collapsing TASK-032 into TASK-017 with a split note.
 
-**One new pattern worth keeping — role-specific inbox UIs**
+**One new pattern worth keeping - role-specific inbox UIs**
 
-TASK-039 (support agent inbox) and TASK-040 (sales representative inbox) are new in this run and weren't generated in any previous output. They come directly from the Customer Support Agent and Sales Representative personas in the spec, which the model had previously folded into the routing tasks. This is the correct behaviour — those are distinct user-facing deliverables. The model is now extracting all five persona types from the spec correctly.
+TASK-039 (support agent inbox) and TASK-040 (sales representative inbox) are new in this run and weren't generated in any previous output. They come directly from the Customer Support Agent and Sales Representative personas in the spec, which the model had previously folded into the routing tasks. This is the correct behaviour - those are distinct user-facing deliverables. The model is now extracting all five persona types from the spec correctly.
 
-**Total: 41 tasks, 188 story points.** This is a **production-quality** sprint backlog for the spec provided.
+**Total: 41 tasks, 188 story points**. This is a **production-quality** sprint backlog for the spec provided.
 ```
 
-### Anthropic Claude Sonnet 4.6 output
+### Anthropic Claude Sonnet 4.6 output - [latest deliverable](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094334.md)
 
 ```md
-
+[placeholder]
 ```
 
 ### Running the tests
@@ -529,8 +545,8 @@ Output is written to `outputs/backlog_<timestamp>.md`.
 
 ### What worked well
 
-- **Checklist evaluation criteria** significantly reduced the number of
-  evaluation iterations needed. Most outputs pass on iteration 1 or 2.
+- **Checklist evaluation criteria** significantly reduced the number ofg
+  evaluation iterations needed. Most outputs pass on iteration 2 or 3.
 
 - **Role-semantic routing descriptions** made the router reliable. Before
   the fix, routing was essentially random; after the fix, routing correctly
@@ -540,12 +556,12 @@ Output is written to `outputs/backlog_<timestamp>.md`.
   cleanly separated agent concerns without needing complex orchestration logic.
 
 - **Injecting the product spec into knowledge (not the user prompt)** ensured
-  the PM agent always had grounding context regardless of how the step was
+  the the agents always had grounding context regardless of how the step was
   phrased.
 
 ### What I would improve
 
-1. **RAG over large specs** - For specs longer than ~3,000 tokens, the
+1. **RAG over large specs** - For specs longer than ~3,000 words/tokens, the
    `KnowledgeAugmentedPromptAgent` injects the entire spec into the context,
    which is expensive and may exceed the model's context window. A
    `RAGKnowledgePromptAgent` that retrieves only the relevant spec sections
@@ -561,11 +577,15 @@ Output is written to `outputs/backlog_<timestamp>.md`.
    deterministic and eliminate most false "No" verdicts caused by cosmetic
    formatting differences.
 
-4. **Anthropic Claude support** - The `ai_client.py` abstraction is in place
-   but the agent classes are coupled to the OpenAI SDK. Refactoring agents to
-   call through `ai_client.py` would allow switching providers without code
-   changes.
+4. **Anthropic Claude output quality** - While provider switching works correctly,
+   output quality between providers differs. Claude Sonnet 4.6's initial runs
+   showed session state contamination from `session.db` causing refusal text to
+   surface as section headings. Prompt-level fixes (suppressing refusals in the
+   persona, adding deduplication guards) partially addressed this, but the Claude
+   output hasn't been iterated to the same level as `gpt-5.4-mini`. A dedicated
+   iteration pass on the Claude outputs will be the next step.
 
 5. **Streaming output** - For large specs the user sees nothing until the
    full workflow completes (~2-3 minutes). Streaming intermediate step
-   outputs would improve perceived responsiveness.
+   outputs would improve perceived responsiveness. Ideally, there would be
+   a Web ChatBot interface that users could interact with.
