@@ -138,11 +138,13 @@ class BacklogProcessor:
             "Every story MUST start with: 'As a'...\n"
             "Write ONE story per product functionality - do not combine multiple "
             "functionalities into a single story.\n"
-            "Cover ALL personas and ALL capabilities mentioned in the specification. "
+            "Cover ALL personas listed in the specification, including passive ones "
+            "(e.g. End Customers who interact with the system indirectly). "
+            "Write at least one story per persona even if their interaction is limited.\n"
             "Do not omit features. If the spec mentions multiple variants of a "
             "capability (e.g. IMAP/SMTP AND Microsoft 365 AND Google Workspace), "
             "write a separate story for each.\n\n"
-            f"Product specification:\n{spec}"
+            f"Product specification:\n\n{spec}"
         )
 
         self._pm_knowledge_agent = KnowledgeAugmentedPromptAgent(
@@ -482,11 +484,7 @@ class BacklogProcessor:
 
         completed_outputs = []
         context_sections = []
-
-        # Anchor the spec as the first named context section
-        if self.product_spec:
-            context_sections.append(f"Product specification:\n{self.product_spec}")
-
+        
         for step in workflow_steps:
             print(f"\n--- Executing step: {step} ---")
 
@@ -509,6 +507,10 @@ class BacklogProcessor:
             context_sections.append(f"Output from step '{step_label}':\n{result}")
 
             print(f"Step output (truncated):\n{result[:400]}...\n")
+
+        # Anchor the product specification as the last named context section
+        if self.product_spec:
+            context_sections.append(f"{self.product_spec}")
 
         # Take the last successful result, not just the last result
         final_output = next(

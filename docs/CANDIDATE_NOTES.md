@@ -180,7 +180,7 @@ knowledge_product_manager = (
    "Do not omit features. If the spec mentions multiple variants of a "
    "capability (e.g. IMAP/SMTP AND Microsoft 365 AND Google Workspace), "
    "write a separate story for each.\n\n"
-   f"Product specification:\n{spec}"
+   f"Product specification:\n\n{spec}"
 )
 ```
 
@@ -359,21 +359,21 @@ Three prompts were used to validate the end-to-end workflow:
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What would the development tasks for this product be?"
 ```
 
-Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260526_110334.md](/outputs/openai/gpt-5.4-mini/backlog_20260526_110334.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260602_132342.md](/outputs/openai/gpt-5.4-mini/backlog_20260602_132342.md)
 
 ```bash
-# Should return Connextra-format user stories only
+# Should return features and user stories only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
-Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260526_110611.md](/outputs/openai/gpt-5.4-mini/backlog_20260526_110611.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260602_134756.md](/outputs/openai/gpt-5.4-mini/backlog_20260602_134756.md)
 
 ```bash
 # Should return feature cards with 4 fields only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What features should this product have?"
 ```
 
-Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260526_111005.md](/outputs/openai/gpt-5.4-mini/backlog_20260526_111005.md)
+Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260602_132942.md](/outputs/openai/gpt-5.4-mini/backlog_20260602_132942.md)
 
 ---
 
@@ -408,37 +408,61 @@ Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_101538.md](/ou
 
 Once I've got everything working the way I wanted, I then decided to have Claude Sonnet 4.6 as a judge of the outputs from the models I've interacted with the most: OpenAI Gpt 5.4 mini and Anthropic Claude Sonnet 4.6 itself. Here's what it came out after analyzing the main python scripts - `agents/base_agents.py` and `src/processor.py` -, the sample requirements - `input/sample_requirements.txt`-, and the output from both models (check the `outputs` folder for them):
 
-### OpenAI gpt-5.4-mini output - [latest deliverable](/outputs/openai/gpt-5.4-mini/backlog_20260526_110334.md)
+### OpenAI gpt-5.4-mini outputs - latest deliverables from June 2nd, 2026
 
 ```md
-This is the best run across the entire session - and it's a significant step up from the previous one. 41 tasks, a healthy effort spread across the full Fibonacci scale (1, 2, 3, 5, 8), all four NFRs present, every 8-point task correctly flagged with a split suggestion, no missing Task ID fields, the summary table contains full user story text throughout, and TASK-019 is the only minor exception (missing Task ID in the card body, still present in the summary). The dependency graph is also the most architecturally accurate yet.
+**13:23:42 - Full workflow ("What would the development tasks for this product be?")**
 
-A few specific observations worth noting:
+This is a clean, production-quality output and the strongest full-workflow run to date. 27 tasks, correct schema → backend → UI layering throughout, all four NFRs as dedicated tasks, full user story text in the summary table, and the dependency graph is architecturally sound. The messaging connector dependency inversion is fully resolved - TASK-012 has no dependencies and TASK-013 correctly lists TASK-010 and TASK-012. No missing Task ID fields. The Fibonacci spread is well-calibrated: 3-point schema tasks, 5-point mid-complexity backends and UIs, 8-point engines with split notes.
 
-**What's meaningfully better than all previous runs**
+One small observation: TASK-015 (analytics events schema) is estimated at 5 points while TASK-001, TASK-006, and TASK-009 (other schema tasks) are all 3 points. The analytics schema is genuinely more complex given it needs to support real-time queries, historical aggregation, and export generation simultaneously, so 5 is defensible - but worth flagging if a team challenges it in grooming.
 
-The schema → API → UI layering (TASK-001/002/003, TASK-010/011/012, TASK-013/014/015) is a direct result of the "split schema into its own task" rule finally being applied consistently. Previous runs collapsed schema work into the backend task. The effort spread is now genuinely Fibonacci-calibrated - 2-point tasks for low-complexity flagging (TASK-009), 3-point tasks for schema and simple UI, 5-point tasks for mid-complexity backends, 8-point tasks for engines and pipelines. TASK-010 being 5 points (not 3) correctly reflects that a routing rules schema spanning five condition types is more complex than a simple SLA targets schema. That distinction wasn't present before.
+---
 
-**TASK-019 - the only remaining Task ID omission**
+**13:29:42 - Features only ("What features should this product have?")**
 
-The card body is missing the `Task ID` row, though the summary table is correct. This is the one residual instance of the field-omission pattern from previous runs. The guard rule is working for all other 40 tasks, so this appears to be a single model slip rather than a systemic gap. At this point it may not be worth adding further prompt complexity to eliminate a single-occurrence edge case.
+Single workflow step, correct routing to the `Program Manager` agent. Six feature cards covering all spec capabilities. Content is accurate and well-structured. This is exactly the expected output for this prompt - no issues.
 
-**TASK-032 dependency worth reviewing**
+---
 
-TASK-032 (Microsoft Teams connector) lists TASK-017 (messaging connector) as a dependency. But TASK-017 *is* the shared messaging connector that covers both Slack and email delivery - TASK-032 appears to be a separate, dedicated Teams connector built on top of it. If TASK-017 already handles Teams, TASK-032 is redundant. If TASK-032 is a Teams-specific extension, then depending on TASK-017 makes sense, but the description of TASK-017 ("shared messaging connector layer") suggests it should already include Teams. This is an architectural ambiguity worth clarifying in the spec or collapsing TASK-032 into TASK-017 with a split note.
+**13:47:56 - User stories only ("What are the user stories for this product?")**
 
-**One new pattern worth keeping - role-specific inbox UIs**
+Single workflow step, correct routing to the Product Manager agent, and 45 well-formed Connextra-format stories covering the full spec. A few observations:
 
-TASK-039 (support agent inbox) and TASK-040 (sales representative inbox) are new in this run and weren't generated in any previous output. They come directly from the Customer Support Agent and Sales Representative personas in the spec, which the model had previously folded into the routing tasks. This is the correct behaviour - those are distinct user-facing deliverables. The model is now extracting all five persona types from the spec correctly.
+**What's working well**
 
-**Total: 41 tasks, 188 story points**. This is a **production-quality** sprint backlog for the spec provided.
+Every capability in the spec has corresponding stories, including all four NFRs as explicit user stories (uptime, 5-second latency, encryption, SOC 2, 50k volume). The IMAP/SMTP, M365, and Google Workspace connections are correctly split into separate stories rather than collapsed into one. The analytics section is the most granular it's been - individual stories for inbox volume, routing decisions, SLA status, volume by category, average response time, escalation rate, CSV export, and PDF export. That level of specificity will produce accurate task cards in the full workflow run.
+
+**One persona inconsistency worth noting**
+
+The spec defines the persona as "Team Leads / Managers" but the stories use "Team Lead or Manager" as a single compound persona. The full workflow run (13:23:42) used "Team Lead" consistently throughout. This inconsistency is harmless at the story level but could cause a subtle routing or matching issue if any downstream agent compares persona names between the story output and the task output. It's worth standardising - either "Team Lead" or "Team Lead / Manager" throughout, matching whatever the PM agent's knowledge string specifies.
+
+**One missing persona - End Customer**
+
+The spec explicitly lists End Customers as a user who sends emails that are ingested by the system. The 13:23:42 full workflow run generated the story "As an End Customer, I want to send emails with attachments so that I can include supporting information in my message" which contributed to TASK-002's acceptance criteria. That story is absent here. It's a minor gap since End Customers have limited direct interaction with the system, but if the PM agent's knowledge string explicitly lists all spec personas, it should cover this one too. You could add a rule:
+
+   "Cover ALL personas listed in the specification, including passive ones "
+   "(e.g. End Customers who interact with the system indirectly). "
+   "Write at least one story per persona even if their interaction is limited.\n"
+
+**Overall** - three golden prompts all producing correct output with the right workflow steps and correct agent routing. The suite is validated.
 ```
 
-### Anthropic Claude Sonnet 4.6 output - [latest deliverable](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094334.md)
+---
+
+### Anthropic Claude Sonnet 4.6 output - latest deliverables from May 19th, 2026
 
 ```md
-[placeholder]
+**Summary for the `CANDIDATE_NOTES`**
+
+The user stories run (09:47:42) demonstrates Claude's baseline output quality is strong - the thematic structure, full persona coverage, and individual story granularity are all superior to the GPT baseline without any prompt iteration. This is the evidence for "Claude produces better user story output by default."
+
+The two full-workflow runs (09:43:34 and 10:15:38) demonstrate the contamination failure cleanly - the same root cause producing different symptom patterns (11 tasks × 3 vs 7 tasks × 3, different domains, different formats) confirms it's a session state and pipeline issue rather than a model quality issue. The fix path is the same as GPT: spec injection into the planner, deduplication guard in the orchestrator, and the refusal-suppression update to extract_steps_from_prompt. None of the content-quality prompt changes (Fibonacci calibration, dependency rules, NFR rules) were needed for Claude - those were GPT-specific gaps.
 ```
+
+> Candidate note: unfortunately, I ran out of credits on the Anthropic API used along this project, which prevents me to run the last full cycle of golden prompts and collect the deliverables of this model before my submission. I'll get back to this as soon as I add some credits to my personal Anthropic account.
+
+---
 
 ### Running the tests
 
@@ -589,3 +613,14 @@ Output is written to `outputs/backlog_<timestamp>.md`.
    full workflow completes (~2-3 minutes). Streaming intermediate step
    outputs would improve perceived responsiveness. Ideally, there would be
    a Web ChatBot interface that users could interact with.
+
+### API costs
+
+Below is a breakdown of the whole cost of this project - for both the development and fine-tunning/testing phases - based on the API keys used:
+
+| Provider | Development phase | Testing Phase | Total |
+| :--- | :--- | :--- | :--- |
+| Open AI | US$ 5.00 | US$ 0.22 | US$ 5.22 |
+| Anthropic | US$ 15.00 | US$ 0.00 | US$ 15.00 |
+
+The cost to run a full cycle (features + user stories + development tasks) for a product specification with a lenght of ~2,600 words/tokens has been estimated at US$ 0.22 for OpenAI [gpt-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) and US$ 2.50 for Anthropic [claude-sonnet-4-6](https://www.anthropic.com/news/claude-sonnet-4-6).
