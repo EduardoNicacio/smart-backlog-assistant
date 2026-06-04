@@ -3,7 +3,7 @@
 ```md
 ## RDE Certification - Capstone Project Documentation
 ## Candidate: Eduardo Nicacio [eduardo.nicacio@accenture.com]
-## Date: June 3rd, 2026
+## Date: June 4th, 2026
 ```
 
 ## 1. Problem Definition
@@ -364,7 +364,7 @@ python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What would th
 Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260602_132342.md](/outputs/openai/gpt-5.4-mini/backlog_20260602_132342.md)
 
 ```bash
-# Should return features and user stories only
+# Should return user stories only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
@@ -379,7 +379,7 @@ Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260602_132942.md](/outputs/op
 
 ---
 
-#### Model: Anthropic claude-sonnet-4-6 - sample outputs from May 19th, 2026 run
+#### Model: Anthropic claude-sonnet-4-6 - sample outputs from June 4th, 2026 run (via Claude Web UI)
 
 ---
 
@@ -388,10 +388,10 @@ Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260602_132942.md](/outputs/op
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What would the development tasks for this product be?"
 ```
 
-Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094334.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094334.md)
+Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260604_164019.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260604_164019.md)
 
 ```bash
-# Should return Connextra-format user stories only
+# Should return user stories only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
@@ -462,7 +462,7 @@ The user stories run (09:47:42) demonstrates Claude's baseline output quality is
 The two full-workflow runs (09:43:34 and 10:15:38) demonstrate the contamination failure cleanly - the same root cause producing different symptom patterns (11 tasks × 3 vs 7 tasks × 3, different domains, different formats) confirms it's a session state and pipeline issue rather than a model quality issue. The fix path is the same as GPT: spec injection into the planner, deduplication guard in the orchestrator, and the refusal-suppression update to extract_steps_from_prompt. None of the content-quality prompt changes (Fibonacci calibration, dependency rules, NFR rules) were needed for Claude - those were GPT-specific gaps.
 ```
 
-> Candidate note: unfortunately, I ran out of credits on the Anthropic API used along this project, which prevents me to run the last full cycle of golden prompts and collect the deliverables of this model before my submission. I'll get back to this as soon as I add some credits to my personal Anthropic account.
+> Candidate note: unfortunately, I ran out of credits on the Anthropic API used along this project, which prevents me to run a last full cycle of golden prompts and collect the deliverables Claude Sonnet 4.6 before my submission. I'll get back to this as soon as I add some credits to my personal Anthropic account.
 
 ---
 
