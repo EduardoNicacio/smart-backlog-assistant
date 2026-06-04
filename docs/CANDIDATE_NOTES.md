@@ -3,7 +3,7 @@
 ```md
 ## RDE Certification - Capstone Project Documentation
 ## Candidate: Eduardo Nicacio [eduardo.nicacio@accenture.com]
-## Date: May 29th, 2026
+## Date: June 3rd, 2026
 ```
 
 ## 1. Problem Definition
@@ -176,7 +176,9 @@ knowledge_product_manager = (
    "Every story MUST start with: 'As a'...\n"
    "Write ONE story per product functionality - do not combine multiple "
    "functionalities into a single story.\n"
-   "Cover ALL personas and ALL capabilities mentioned in the specification. "
+   "Cover ALL personas listed in the specification, including passive ones "
+   "(e.g. End Customers who interact with the system indirectly). "
+   "Write at least one story per persona even if their interaction is limited.\n"
    "Do not omit features. If the spec mentions multiple variants of a "
    "capability (e.g. IMAP/SMTP AND Microsoft 365 AND Google Workspace), "
    "write a separate story for each.\n\n"
@@ -350,7 +352,7 @@ Three prompts were used to validate the end-to-end workflow:
 
 ---
 
-#### Model: Open AI gpt-5.4-mini - sample outputs
+#### Model: Open AI gpt-5.4-mini - sample outputs from June 2nd, 2026 run
 
 ---
 
@@ -377,7 +379,7 @@ Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260602_132942.md](/outputs/op
 
 ---
 
-#### Model: Anthropic claude-sonnet-4-6 - sample outputs
+#### Model: Anthropic claude-sonnet-4-6 - sample outputs from May 19th, 2026 run
 
 ---
 
@@ -435,7 +437,7 @@ Every capability in the spec has corresponding stories, including all four NFRs 
 
 **One persona inconsistency worth noting**
 
-The spec defines the persona as "Team Leads / Managers" but the stories use "Team Lead or Manager" as a single compound persona. The full workflow run (13:23:42) used "Team Lead" consistently throughout. This inconsistency is harmless at the story level but could cause a subtle routing or matching issue if any downstream agent compares persona names between the story output and the task output. It's worth standardising - either "Team Lead" or "Team Lead / Manager" throughout, matching whatever the PM agent's knowledge string specifies.
+The spec defines the persona as "Team Leads / Managers" but the stories use "Team Lead or Manager" as a single compound persona. The full workflow run (13:23:42) used "Team Lead" consistently throughout. This inconsistency is harmless at the story level but could cause a subtle routing or matching issue if any downstream agent compares persona names between the story output and the task output. It's worth standardizing - either "Team Lead" or "Team Lead / Manager" throughout, matching whatever the PM agent's knowledge string specifies.
 
 **One missing persona - End Customer**
 
@@ -621,6 +623,8 @@ Below is a breakdown of the whole cost of this project - for both the developmen
 | Provider | Development phase | Testing Phase | Total |
 | :--- | :--- | :--- | :--- |
 | Open AI | US$ 5.00 | US$ 0.22 | US$ 5.22 |
-| Anthropic | US$ 15.00 | US$ 0.00 | US$ 15.00 |
+| Anthropic | US$ 15.00 | US$ 0.00* | US$ 15.00 |
 
-The cost to run a full cycle (features + user stories + development tasks) for a product specification with a lenght of ~2,600 words/tokens has been estimated at US$ 0.22 for OpenAI [gpt-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) and US$ 2.50 for Anthropic [claude-sonnet-4-6](https://www.anthropic.com/news/claude-sonnet-4-6).
+> A full golden prompt testing cycle wasn't possible for Claude Sonnet 4.6 due to the lack of balance for the API key I've been using throughout this project.
+
+The cost to run a full cycle (features + user stories + development tasks) for a product specification with a length of ~2,600 words/tokens has been estimated at **US$ 0.25** for OpenAI [gpt-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) and **US$ 2.50** for Anthropic [claude-sonnet-4-6](https://www.anthropic.com/news/claude-sonnet-4-6).
