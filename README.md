@@ -53,6 +53,8 @@ cd smart-backlog-assistant/
 
 - Python 3.13
 
+Create a Python virtual environment and activate it.
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate       # Windows: .venv\Scripts\activate
@@ -131,12 +133,12 @@ ActionPlanningAgent ──── extracts ordered steps (stories → features �
     ▼
 RoutingAgent ──── cosine-similarity routing over step embeddings
     │
-    ├──► PM support     ──► KnowledgeAugmentedPromptAgent + EvaluationAgent
-    ├──► ProgMgr support──► KnowledgeAugmentedPromptAgent + EvaluationAgent
-    └──► DevEng support ──► KnowledgeAugmentedPromptAgent + EvaluationAgent
+    ├──► PM support      ──► KnowledgeAugmentedPromptAgent + EvaluationAgent
+    ├──► ProgMgr support ──► KnowledgeAugmentedPromptAgent + EvaluationAgent
+    └──► DevEng support  ──► KnowledgeAugmentedPromptAgent + EvaluationAgent
                                           │
                                           ▼
-                               Validated output → formatter → outputs/
+                         Validated output → formatter → outputs/
 ```
 
 ### Agent roles
@@ -144,7 +146,7 @@ RoutingAgent ──── cosine-similarity routing over step embeddings
 | Agent | Responsibility |
 | :--- | :--- |
 | `ActionPlanningAgent` | Parses the workflow prompt into an ordered step list |
-| `RoutingAgent` | Selects the right agent for each step via embedding similarity |
+| `RoutingAgent` | Selects the right agent for each step via cosine similarity |
 | `KnowledgeAugmentedPromptAgent` (PM) | Generates Connextra-format user stories grounded in the product spec |
 | `KnowledgeAugmentedPromptAgent` (ProgMgr) | Groups stories into named feature cards |
 | `KnowledgeAugmentedPromptAgent` (DevEng) | Generates Jira-style development tasks |
@@ -187,10 +189,10 @@ RoutingAgent ──── cosine-similarity routing over step embeddings
 
 ## Prompt Engineering
 
-All prompt engineering is in `src/processor.py`.  Key decisions:
+All prompt engineering is in `src/processor.py`. Key decisions:
 
 **Persona strings** name the role and its explicit boundary:
-> *"You are a Product Manager. Your sole responsibility is to define user
+> "You are a Product Manager. Your sole responsibility is to define user
 > stories for a product. You do not define features or tasks."*
 
 Negative constraints ("You do not define…") prevent agents from generating
