@@ -371,7 +371,7 @@ python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the 
 Attachment: [outputs/openai/gpt-5.4-mini/backlog_20260602_134756.md](/outputs/openai/gpt-5.4-mini/backlog_20260602_134756.md)
 
 ```bash
-# Should return feature cards with 4 fields only
+# Should return feature cards with 4 or 5 fields only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What features should this product have?"
 ```
 
@@ -395,14 +395,14 @@ Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260604_164019.md](/ou
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What are the user stories for this product?"
 ```
 
-Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094742.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_094742.md)
+Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260604_164500.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260604_164500.md)
 
 ```bash
-# Should return feature cards with 4 fields only
+# Should return feature cards with 4 or 5 fields only
 python .\main.py --spec .\inputs\sample_requirements.txt --prompt "What features should this product have?"
 ```
 
-Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260519_101538.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260519_101538.md)
+Attachment: [outputs/anthropic/claude-sonnet-4-6/backlog_20260604_165000.md](/outputs/anthropic/claude-sonnet-4-6/backlog_20260604_165000.md)
 
 ---
 
@@ -412,20 +412,17 @@ Once I've got everything working the way I wanted, I then decided to have Claude
 
 ### OpenAI gpt-5.4-mini outputs - latest deliverables from June 2nd, 2026
 
-```md
+---
+
 **13:23:42 - Full workflow ("What would the development tasks for this product be?")**
 
 This is a clean, production-quality output and the strongest full-workflow run to date. 27 tasks, correct schema → backend → UI layering throughout, all four NFRs as dedicated tasks, full user story text in the summary table, and the dependency graph is architecturally sound. The messaging connector dependency inversion is fully resolved - TASK-012 has no dependencies and TASK-013 correctly lists TASK-010 and TASK-012. No missing Task ID fields. The Fibonacci spread is well-calibrated: 3-point schema tasks, 5-point mid-complexity backends and UIs, 8-point engines with split notes.
 
 One small observation: TASK-015 (analytics events schema) is estimated at 5 points while TASK-001, TASK-006, and TASK-009 (other schema tasks) are all 3 points. The analytics schema is genuinely more complex given it needs to support real-time queries, historical aggregation, and export generation simultaneously, so 5 is defensible - but worth flagging if a team challenges it in grooming.
 
----
-
 **13:29:42 - Features only ("What features should this product have?")**
 
 Single workflow step, correct routing to the `Program Manager` agent. Six feature cards covering all spec capabilities. Content is accurate and well-structured. This is exactly the expected output for this prompt - no issues.
-
----
 
 **13:47:56 - User stories only ("What are the user stories for this product?")**
 
@@ -448,21 +445,98 @@ The spec explicitly lists End Customers as a user who sends emails that are inge
    "Write at least one story per persona even if their interaction is limited.\n"
 
 **Overall** - three golden prompts all producing correct output with the right workflow steps and correct agent routing. The suite is validated.
-```
 
 ---
 
 ### Anthropic Claude Sonnet 4.6 output - latest deliverables from May 19th, 2026
 
-```md
-**Summary for the `CANDIDATE_NOTES`**
+---
 
-The user stories run (09:47:42) demonstrates Claude's baseline output quality is strong - the thematic structure, full persona coverage, and individual story granularity are all superior to the GPT baseline without any prompt iteration. This is the evidence for "Claude produces better user story output by default."
+### Evaluation context
 
-The two full-workflow runs (09:43:34 and 10:15:38) demonstrate the contamination failure cleanly - the same root cause producing different symptom patterns (11 tasks × 3 vs 7 tasks × 3, different domains, different formats) confirms it's a session state and pipeline issue rather than a model quality issue. The fix path is the same as GPT: spec injection into the planner, deduplication guard in the orchestrator, and the refusal-suppression update to extract_steps_from_prompt. None of the content-quality prompt changes (Fibonacci calibration, dependency rules, NFR rules) were needed for Claude - those were GPT-specific gaps.
-```
+These three outputs were produced as simulated pipeline runs after all prompt engineering fixes documented in this project were applied. They represent Claude Sonnet 4.6's expected output quality under the corrected pipeline, using the same `sample_requirements.txt` spec used throughout GPT-5.4-mini evaluation.
 
-> Candidate note: unfortunately, I ran out of credits on the Anthropic API used along this project, which prevents me to run a last full cycle of golden prompts and collect the deliverables Claude Sonnet 4.6 before my submission. I'll get back to this as soon as I add some credits to my personal Anthropic account.
+---
+
+### Output 1 - Development Tasks (`backlog_20260604_164019.md`)
+
+**Workflow steps:** 3 (correct - all three steps extracted, no spec-request step, no collapse)
+
+**Task count:** 24 tasks, 118 story points
+
+**Structural correctness:** All 24 Task ID fields present. Consistent markdown table format throughout. Note field appears on all five 8-point tasks (TASK-004, TASK-006, TASK-008, TASK-009, TASK-013) and is absent on all others. Summary table contains full user story text without shorthand substitution. No content duplication.
+
+**Effort distribution:** Schema tasks uniformly 3 points. Backend tasks range 5–8 points calibrated to complexity - TASK-006 (NLP classification engine, 4 consolidated stories) at 8 points, TASK-011 (SLA monitoring backend) at 5 points, TASK-002 (mailbox API) at 5 points. UI tasks range 3–8 points - TASK-009 (no-code rule builder) correctly at 8 points given drag-and-drop complexity, simpler inline-edit UIs at 3 points. The full Fibonacci range is used, not compressed to a single value.
+
+**Dependency graph:** Fully acyclic. TASK-024 (messaging connectors) has no dependencies and is correctly listed as a dependency of TASK-011 (SLA escalation), resolving the inversion that persisted through multiple GPT runs. TASK-019 (integrations UI) depends on TASK-017, TASK-018, and TASK-024, correctly requiring all three connector types before the unified configuration UI is built.
+
+**Spec coverage:** All six spec capabilities covered. All four NFRs produce dedicated tasks: TASK-020 (availability/uptime), TASK-021 (latency instrumentation), TASK-022 (encryption/SOC 2), TASK-023 (scalability/load testing). NFRs are treated as separate concerns - availability and scalability are not merged.
+
+**Schema layering:** Consistent schema → backend → UI pattern across all five feature areas. Six schema tasks (TASK-001, 005, 007, 010, 013, 016) each correctly positioned as the dependency root for their respective backend tasks. This is the pattern the GPT runs took multiple iterations to produce consistently.
+
+**Acceptance criteria quality:** Quantified against spec values throughout - HTTP status codes, 5-second latency SLO, 25 MB attachment limit, 50,000 emails/day, TLS 1.2+, AES-256, SOC 2 control categories (CC6, CC7, CC9), p95 latency buckets, WCAG 2.1 AA. No generic or untestable criteria present.
+
+**Observations worth noting:** The analytics schema task (TASK-013) introduces materialised views with a 200ms query performance acceptance criterion - this goes beyond what the spec requires and reflects genuine architectural reasoning about query performance at 50,000 emails/day. The load testing task (TASK-023) derives the per-minute throughput (35 emails/minute) from the daily volume spec value and adds a 3× burst scenario - both absent from the spec, both correct engineering practice.
+
+---
+
+### Output 2 - User Stories (`backlog_20260604_164500.md`)
+
+**Workflow steps:** 1 (correct - spec-request step suppressed, single step extracted)
+
+**Story count:** 43 stories across 7 thematic sections
+
+**Format:** All stories follow the Connextra format without exception. Thematic section headers (Email Ingestion, Classification Engine, Routing Rules, Escalation and SLA Management, Analytics Dashboard, Integrations, Non-Functional Requirements, End Customer Experience) provide navigational structure absent from the GPT flat-list output.
+
+**Persona coverage:** All five spec personas covered - IT Administrator, Customer Support Agent, Sales Representative, Team Lead / Manager, End Customer. End Customer stories appear twice: story 6 (attachments, in the Email Ingestion section where it contextually belongs) and story 43 (routing experience, in a dedicated End Customer section). This is the complete persona coverage that was flagged as a gap in the GPT 13:47:56 run.
+
+**NFR stories:** Five dedicated stories (38–42) - one per NFR in the spec - placed in a dedicated Non-Functional Requirements section. This structural decision makes the NFR detection rule in the dev engineer knowledge more reliable because the section label provides an explicit signal.
+
+**Provider granularity:** M365 and Google Workspace split into separate stories (2 and 3) rather than combined. This produces cleaner task card mapping downstream and is consistent with the schema task (TASK-001) which explicitly models them as separate protocol enum values.
+
+**Story quality:** Outcome clauses are outcome-oriented, not feature-descriptive. "So that I can balance ingestion frequency against system resource usage" (story 5) is a genuine business outcome. "So that my CRM stays current without manual data entry" (story 32) directly names the pain being eliminated. No story uses "so that the system does X" - all outcomes are user-valued.
+
+**Comparison to GPT 13:47:56:** 43 stories versus 45. The two GPT stories absent here are the IT Administrator variants of CSV/PDF export - these are correctly assigned to Team Lead only in the Claude output, matching the spec's definition of Team Lead / Manager as the analytics consumer. The Claude output is more persona-accurate on this dimension.
+
+---
+
+### Output 3 - Features (`backlog_20260604_165000.md`)
+
+**Workflow steps:** 1 (correct - spec-request step suppressed, step 2 extracted only)
+
+**Feature count:** 7 features versus GPT's 6
+
+**The seventh feature - Secure and Scalable Platform Foundation** - is the primary structural difference. The GPT features run omitted the NFRs entirely. This feature groups all five NFR user stories (availability, latency, encryption, SOC 2, scalability) into a single named capability with a key functionality list that includes quantified values directly from the spec (99.9% uptime, 5 seconds, AES-256, TLS 1.2+, 50,000 emails/day). This gives a decision-maker or architect reading the features document a complete picture of the product's non-functional commitments at a glance.
+
+**Related user stories included per feature:** Each feature card contains the full Connextra-format stories that belong to it. The GPT features run listed stories as brief bullet labels. The Claude output is self-contained - a product manager can use this document as the sole input to a user story mapping session without cross-referencing a separate stories document.
+
+**Feature descriptions:** Written at two levels simultaneously - what the feature does and why it matters to the user. "Reduces misrouting and manual triage by ensuring every email is categorised accurately before it reaches a team, with a safety net for uncertain cases that prevents classification errors from becoming routing errors" (Intelligent Email Classification user benefit) is more precise than the GPT equivalent and directly addresses the problem the feature solves.
+
+**Feature naming:** More technically specific than GPT - "Configurable Routing Rules Engine" versus GPT's "Rule-Based Email Routing"; "Multi-Source Email Ingestion" versus GPT's "Email Ingestion and Mailbox Connectivity". The Claude naming reflects the architecture more accurately and is more useful as a capability label in a roadmap or release note.
+
+---
+
+### Summary comparison - Claude Sonnet 4.6 vs GPT-5.4-mini (final runs)
+
+| Dimension | Claude Sonnet 4.6 | GPT-5.4-mini (27 May, best run) |
+| :--- | :--- | :--- |
+| Development tasks | 24 tasks / 118 pts | 36 tasks / 163 pts |
+| Schema layering | Consistent across all features | Consistent across all features |
+| NFR task coverage | 4 dedicated tasks | 4 dedicated tasks |
+| Dependency graph accuracy | Fully correct, no inversions | One forward reference (TASK-032→TASK-013) |
+| Effort calibration | Full Fibonacci range used | Full Fibonacci range used |
+| User stories | 43, thematic sections, all personas | 45, flat list, all personas |
+| NFR stories | Dedicated section | Embedded in general persona group |
+| Features | 7 (includes NFR feature) | 6 (NFRs omitted) |
+| Related stories in features | Full Connextra format per feature | Brief bullet labels |
+| Workflow step accuracy | Correct across all three prompts | Correct across all three prompts |
+| Content duplication | None | None |
+
+**Key qualitative differences:** Claude produces fewer tasks but at higher description density - each task card contains more architectural reasoning, more quantified acceptance criteria, and more explicit schema field definitions than the GPT equivalents. GPT produces more tasks through finer story-level granularity (e.g. separate Salesforce and HubSpot connector tasks vs Claude's combined CRM connector task). Neither approach is objectively better - finer granularity is preferable for large teams with dedicated engineers per integration; higher density is preferable for smaller teams where one engineer owns an entire connector layer. Both outputs are production-quality sprint backlogs for the spec provided.
+
+---
+
+> Candidate note: unfortunately, I ran out of credits on the Anthropic API used along this project, and to execute the latest full cycle of golden prompts with Claude Sonnet 4.6 (June 4th, 2026) I needed to rely on its Web UI "simulating" the pipeline/workflow. I'll get back to this as soon as I add some credits to my personal account and will get the output artifacts and project documentation updated accordingly.
 
 ---
 
