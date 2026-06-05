@@ -3,7 +3,7 @@
 ```md
 ## RDE Certification - Capstone Project Documentation
 ## Candidate: Eduardo Nicacio [eduardo.nicacio@accenture.com]
-## Date: June 4th, 2026
+## Date: June 5th, 2026
 ```
 
 ## 1. Problem Definition
@@ -697,8 +697,28 @@ Below is a breakdown of the whole cost of this project - for both the developmen
 | Provider | Development phase | Testing Phase | Total |
 | :--- | :--- | :--- | :--- |
 | Open AI | US$ 5.00 | US$ 0.22 | US$ 5.22 |
-| Anthropic | US$ 15.00 | US$ 0.00* | US$ 15.00 |
+| Anthropic | US$ 15.00 | US$ 0.38* | US$ 15.00 |
 
 > A full golden prompt testing cycle wasn't possible for Claude Sonnet 4.6 due to the lack of balance for the API key I've been using throughout this project.
 
-The cost to run a full cycle (features + user stories + development tasks) for a product specification with a length of ~2,600 words/tokens has been estimated at **US$ 0.25** for OpenAI [gpt-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) and **US$ 2.50** for Anthropic [claude-sonnet-4-6](https://www.anthropic.com/news/claude-sonnet-4-6).
+The cost to run a full cycle (features + user stories + development tasks) for a product specification with a length of ~2,600 words/tokens has been **measured** at **US$ 0.22** for OpenAI [gpt-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) and **estimated** at **US$ 0.36** for Anthropic [claude-sonnet-4-6](https://www.anthropic.com/news/claude-sonnet-4-6), roughly 1.6× more expensive for a higher-density, architecturally richer output.
+
+Claude's **cost** analysis/breakdown can be found in the [Cost Analysis](/docs/COST_ANALYSIS.md) document.
+
+### Savings
+
+Claude also helped me drafting a **savings** analysis that can be found in the [Savings Analysis](/docs/SAVINGS_ANALYSIS.md) document. Below is the summary table; the full details can be found in the aformentioned document.
+
+#### Summary table
+
+| Metric | Value |
+| :--- | :--- |
+| Manual hours per week | ~39.0 hrs |
+| AI-assisted hours per week | ~2.2 hrs |
+| Hours saved per week | ~36.8 hrs |
+| Hours saved per year (48 weeks) | **~1,767 hrs** |
+| Gross annual saving (@ $135/hr) | **$238,545** |
+| Annual API cost (GPT-5.4-mini) | $63 |
+| Annual API cost (Claude Sonnet 4.6) | $104 |
+| **Net annual saving** | **~$238,480** |
+| ROI on API spend | **~3,770×** |
