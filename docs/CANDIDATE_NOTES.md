@@ -523,7 +523,7 @@ These three outputs were produced as simulated pipeline runs after all prompt en
 | Development tasks | 24 tasks / 118 pts | 36 tasks / 163 pts |
 | Schema layering | Consistent across all features | Consistent across all features |
 | NFR task coverage | 4 dedicated tasks | 4 dedicated tasks |
-| Dependency graph accuracy | Fully correct, no inversions | One forward reference (TASK-032→TASK-013) |
+| Dependency graph accuracy | Fully correct, no inversions | One forward reference (TASK-032 → TASK-013) |
 | Effort calibration | Full Fibonacci range used | Full Fibonacci range used |
 | User stories | 43, thematic sections, all personas | 45, flat list, all personas |
 | NFR stories | Dedicated section | Embedded in general persona group |
@@ -605,7 +605,7 @@ tests/test_processor.py::TestBacklogProcessorIntegration::test_run_returns_expec
 ### Prerequisites
 
 - Python 3.13+
-- An OpenAI and/or an Anthropic API key (or Vocareum key starting with "voc")
+- An OpenAI and/or an Anthropic API key (or Vocareum key starting with "voc-")
 
 > Note: An OpenAI key is still required even when the provider is set as `anthropic`. The reason for it is that Anthropic doesn't provide an embedding model for cosine similarity analysis.
 
@@ -645,7 +645,7 @@ Output is written to `outputs/backlog_<timestamp>.md`.
 
 ### What worked well
 
-- **Checklist evaluation criteria** significantly reduced the number ofg
+- **Checklist evaluation criteria** significantly reduced the number of
   evaluation iterations needed. Most outputs pass on iteration 2 or 3.
 
 - **Role-semantic routing descriptions** made the router reliable. Before
@@ -677,7 +677,7 @@ Output is written to `outputs/backlog_<timestamp>.md`.
    deterministic and eliminate most false "No" verdicts caused by cosmetic
    formatting differences.
 
-4. **Anthropic Claude output quality** - While provider switching works correctly,
+4. **Anthropic Claude output quality** - While switching providers works correctly,
    output quality between providers differs. Claude Sonnet 4.6's initial runs
    showed session state contamination from `session.db` causing refusal text to
    surface as section headings. Prompt-level fixes (suppressing refusals in the
@@ -701,7 +701,7 @@ Below is a breakdown of the whole cost of this project - for both the developmen
 
 > A full golden prompt testing cycle wasn't possible for Claude Sonnet 4.6 due to the lack of balance for the API key I've been using throughout this project.
 
-The cost to run a full cycle (features + user stories + development tasks) for a product specification with a length of ~2,600 words/tokens has been **measured** at **US$ 0.22** for OpenAI [gpt-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) and **estimated** at **US$ 0.36** for Anthropic [claude-sonnet-4-6](https://www.anthropic.com/news/claude-sonnet-4-6), roughly 1.6× more expensive for a higher-density, architecturally richer output.
+The cost to run a full cycle (features + user stories + development tasks) for a product specification with a length of ~3,000 words/tokens has been **measured** at **US$ 0.22** for OpenAI [gpt-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) and **estimated** at **US$ 0.36** for Anthropic [claude-sonnet-4-6](https://www.anthropic.com/news/claude-sonnet-4-6), roughly 1.6× more expensive for a higher-density, architecturally richer output.
 
 Claude's **cost** analysis/breakdown can be found in the [Cost Analysis](/docs/COST_ANALYSIS.md) document.
 
