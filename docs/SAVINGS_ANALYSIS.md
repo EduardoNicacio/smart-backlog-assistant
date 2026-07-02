@@ -49,6 +49,8 @@ Per week:
 
 1,767 hours × $135.00/hr = **$238,545 per year**
 
+---
+
 ## Step 6 - Net saving after workflow running costs
 
 Three golden prompts per document × 2 documents × 48 weeks = 288 full workflow runs per year.

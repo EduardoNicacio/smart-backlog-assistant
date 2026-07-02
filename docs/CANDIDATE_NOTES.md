@@ -1,7 +1,7 @@
 # Candidate Notes - Smart Backlog Assistant
 
 ```md
-## RDE Certification - Capstone Project Documentation
+## Accenture RDE Certification - Capstone Project Documentation
 ## Candidate: Eduardo Nicacio [eduardo.nicacio@accenture.com]
 ## Date: June 5th, 2026
 ```
